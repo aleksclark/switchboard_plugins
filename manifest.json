@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "name": "aleksclark-plugins",
+  "description": "Community Switchboard WASM plugins",
+  "plugins": [
+    {
+      "name": "homeassistant",
+      "description": "Home Assistant smart home integration — control lights, sensors, automations, scenes, scripts, and more via the HA REST API",
+      "author": "aleksclark",
+      "homepage": "https://github.com/aleksclark/switchboard_plugins",
+      "license": "MIT",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "abi_min": 1,
+          "abi_max": 1,
+          "url": "https://github.com/aleksclark/switchboard_plugins/raw/main/dist/homeassistant.wasm",
+          "sha256": "bd3e812647c250e7b2bb61db79a2add3be9496db097598742a0805da66d9181c",
+          "size": 330752,
+          "released_at": "2026-04-16T00:00:00Z",
+          "changelog": "Initial release — 26 tools: states, services, events, history, logbook, config, templates, calendars, intents, automations, scenes, scripts."
+        }
+      ]
+    }
+  ]
+}
