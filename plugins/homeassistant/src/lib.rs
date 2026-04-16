@@ -44,6 +44,13 @@ pub extern "C" fn metadata() -> u64 {
         homepage: "https://github.com/aleksclark/switchboard_plugins".into(),
         license: "MIT".into(),
         capabilities: vec!["http".into()],
+        credential_keys: vec!["token".into(), "base_url".into()],
+        plain_text_keys: vec!["base_url".into()],
+        optional_keys: vec![],
+        placeholders: HashMap::from([
+            ("token".into(), "your-long-lived-access-token".into()),
+            ("base_url".into(), "http://homeassistant.local:8123".into()),
+        ]),
     })
 }
 

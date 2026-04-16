@@ -15,7 +15,7 @@
           "abi_min": 1,
           "abi_max": 1,
           "url": "https://github.com/aleksclark/switchboard_plugins/raw/main/dist/homeassistant.wasm",
-          "sha256": "bd3e812647c250e7b2bb61db79a2add3be9496db097598742a0805da66d9181c",
+          "sha256": "036685c9a1ff662b62e31ab94846948ce47127b8a30e7f111122dca9c0e1b304",
           "size": 330752,
           "released_at": "2026-04-16T00:00:00Z",
           "changelog": "Initial release — 26 tools: states, services, events, history, logbook, config, templates, calendars, intents, automations, scenes, scripts."
