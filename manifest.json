@@ -21,6 +21,101 @@
           "changelog": "Initial release — 26 tools: states, services, events, history, logbook, config, templates, calendars, intents, automations, scenes, scripts."
         }
       ]
+    },
+    {
+      "name": "radarr",
+      "description": "Radarr movie collection manager — manage movies, search, queue, history, calendar, quality profiles, and more via the Radarr API",
+      "author": "aleksclark",
+      "homepage": "https://github.com/aleksclark/switchboard_plugins",
+      "license": "MIT",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "abi_min": 1,
+          "abi_max": 1,
+          "url": "https://github.com/aleksclark/switchboard_plugins/raw/main/dist/radarr.wasm",
+          "sha256": "af22d75a21c9155ecc6d74a9a783bc280ed352bcbeef0a8e40a19170deaa3447",
+          "size": 159714,
+          "released_at": "2026-04-25T00:00:00Z",
+          "changelog": "Initial release — 22 tools: movies, calendar, queue, history, commands, status, quality profiles, root folders, tags, blocklist, wanted/missing."
+        }
+      ]
+    },
+    {
+      "name": "sonarr",
+      "description": "Sonarr TV series manager — manage series, episodes, search, queue, history, calendar, quality profiles, and more via the Sonarr API",
+      "author": "aleksclark",
+      "homepage": "https://github.com/aleksclark/switchboard_plugins",
+      "license": "MIT",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "abi_min": 1,
+          "abi_max": 1,
+          "url": "https://github.com/aleksclark/switchboard_plugins/raw/main/dist/sonarr.wasm",
+          "sha256": "1ab2ba6de0fc85f5b9b207ba83b657754d4a7a8e246b1d415819d98ca19894f2",
+          "size": 161480,
+          "released_at": "2026-04-25T00:00:00Z",
+          "changelog": "Initial release — 24 tools: series, episodes, calendar, queue, history, commands, status, quality profiles, root folders, tags, blocklist, wanted/missing."
+        }
+      ]
+    },
+    {
+      "name": "lidarr",
+      "description": "Lidarr music collection manager — manage artists, albums, search, queue, history, calendar, quality/metadata profiles, and more via the Lidarr API",
+      "author": "aleksclark",
+      "homepage": "https://github.com/aleksclark/switchboard_plugins",
+      "license": "MIT",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "abi_min": 1,
+          "abi_max": 1,
+          "url": "https://github.com/aleksclark/switchboard_plugins/raw/main/dist/lidarr.wasm",
+          "sha256": "ed460b2a062c663b046d772231aeec33daaa3754a735654cb8dd6559ef35bbdf",
+          "size": 163249,
+          "released_at": "2026-04-25T00:00:00Z",
+          "changelog": "Initial release — 27 tools: artists, albums, calendar, queue, history, commands, status, quality/metadata profiles, root folders, tags, blocklist, wanted/missing."
+        }
+      ]
+    },
+    {
+      "name": "readarr",
+      "description": "Readarr book collection manager — manage authors, books, search, queue, history, calendar, quality/metadata profiles, and more via the Readarr API",
+      "author": "aleksclark",
+      "homepage": "https://github.com/aleksclark/switchboard_plugins",
+      "license": "MIT",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "abi_min": 1,
+          "abi_max": 1,
+          "url": "https://github.com/aleksclark/switchboard_plugins/raw/main/dist/readarr.wasm",
+          "sha256": "c5a5a51154c0451bf2ff807f21c663c4090cdb3423d620bce8b89e09e83ffe1a",
+          "size": 165422,
+          "released_at": "2026-04-25T00:00:00Z",
+          "changelog": "Initial release — 29 tools: authors, books, calendar, queue, history, commands, status, quality/metadata profiles, root folders, tags, blocklist, wanted/missing."
+        }
+      ]
+    },
+    {
+      "name": "prowlarr",
+      "description": "Prowlarr indexer manager — manage indexers, search across all indexers, sync with Sonarr/Radarr/Lidarr/Readarr, download clients, and notifications",
+      "author": "aleksclark",
+      "homepage": "https://github.com/aleksclark/switchboard_plugins",
+      "license": "MIT",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "abi_min": 1,
+          "abi_max": 1,
+          "url": "https://github.com/aleksclark/switchboard_plugins/raw/main/dist/prowlarr.wasm",
+          "sha256": "4a7c771ad593beeeb3a0320428ee5fa4573c4a0b5ed1d0336242a0a0e4e476ea",
+          "size": 156997,
+          "released_at": "2026-04-25T00:00:00Z",
+          "changelog": "Initial release — 25 tools: indexers, search, applications, indexer proxies, status, tags, download clients, notifications."
+        }
+      ]
     }
   ]
 }
