@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: wasm32-wasip1
+
+      - name: Build all plugins
+        run: cargo build --target wasm32-wasip1 --release
+
+      - name: Verify WASM outputs exist
+        run: |
+          for plugin in homeassistant radarr sonarr lidarr readarr prowlarr; do
+            file="target/wasm32-wasip1/release/${plugin}_wasm.wasm"
+            if [ ! -f "$file" ]; then
+              echo "MISSING: $file"
+              exit 1
+            fi
+            echo "OK: $file ($(stat -c%s "$file") bytes)"
+          done

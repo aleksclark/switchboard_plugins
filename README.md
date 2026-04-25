@@ -7,6 +7,11 @@ Community WASM plugins for [Switchboard](https://github.com/daltoniam/switchboar
 | Plugin | Tools | Description |
 |--------|-------|-------------|
 | [homeassistant](plugins/homeassistant/) | 26 | Home Assistant smart home — states, services, events, history, automations, scenes, scripts |
+| [radarr](plugins/radarr/) | 22 | Radarr movie manager — movies, calendar, queue, history, commands, quality profiles |
+| [sonarr](plugins/sonarr/) | 24 | Sonarr TV series manager — series, episodes, calendar, queue, history, commands |
+| [lidarr](plugins/lidarr/) | 27 | Lidarr music manager — artists, albums, calendar, queue, history, quality/metadata profiles |
+| [readarr](plugins/readarr/) | 29 | Readarr book manager — authors, books, calendar, queue, history, quality/metadata profiles |
+| [prowlarr](plugins/prowlarr/) | 25 | Prowlarr indexer manager — indexers, search, applications, download clients |
 
 ## Installing
 
@@ -46,7 +51,7 @@ Plugins target Switchboard ABI v1. Each `.wasm` binary must export:
 | `execute(ptr_size)` | `-> ptr_size` |
 | `healthy()` | `-> i32` |
 
-The `sdk/` directory contains the Rust guest SDK (`switchboard-guest-sdk`) that handles memory management, host function imports, and type serialization.
+The guest SDK ([`switchboard-guest-sdk`](https://github.com/daltoniam/switchboard/tree/main/wasm/guest-rust/sdk)) is sourced from the main Switchboard repository and handles memory management, host function imports, and type serialization.
 
 ## Manifest format
 
