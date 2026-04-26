@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'plugins/**'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: wasm32-wasip1
+
+      - name: Build all plugins
+        run: cargo build --target wasm32-wasip1 --release
+
+      - name: Prepare release assets
+        id: prep
+        run: |
+          mkdir -p dist
+          VERSION="v$(date -u +%Y%m%d.%H%M%S)"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          for plugin in homeassistant radarr sonarr lidarr readarr prowlarr; do
+            src="target/wasm32-wasip1/release/${plugin}_wasm.wasm"
+            dst="dist/${plugin}.wasm"
+            if [ ! -f "$src" ]; then
+              echo "::error::Missing $src"
+              exit 1
+            fi
+            cp "$src" "$dst"
+            echo "OK: $dst ($(stat -c%s "$dst") bytes)"
+          done
+
+      - name: Create release
+        id: release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.prep.outputs.version }}
+          name: ${{ steps.prep.outputs.version }}
+          generate_release_notes: true
+          files: dist/*.wasm
+
+      - name: Update manifest.json
+        env:
+          TAG: ${{ steps.prep.outputs.version }}
+          REPO: ${{ github.repository }}
+        run: |
+          for plugin in homeassistant radarr sonarr lidarr readarr prowlarr; do
+            wasm="dist/${plugin}.wasm"
+            sha=$(sha256sum "$wasm" | awk '{print $1}')
+            size=$(stat -c%s "$wasm")
+            url="https://github.com/${REPO}/releases/download/${TAG}/${plugin}.wasm"
+            now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+            # Update the latest version entry for each plugin
+            jq --arg name "$plugin" \
+               --arg url "$url" \
+               --arg sha "$sha" \
+               --argjson size "$size" \
+               --arg now "$now" \
+               '
+               .plugins |= map(
+                 if .name == $name then
+                   .versions[-1].url = $url
+                   | .versions[-1].sha256 = $sha
+                   | .versions[-1].size = $size
+                   | .versions[-1].released_at = $now
+                 else .
+                 end
+               )
+               ' manifest.json > manifest.tmp && mv manifest.tmp manifest.json
+          done
+
+      - name: Commit manifest.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add manifest.json
+          if git diff --cached --quiet; then
+            echo "No manifest changes to commit"
+          else
+            git commit -m "chore: update manifest.json for ${{ steps.prep.outputs.version }}"
+            git push
+          fi
