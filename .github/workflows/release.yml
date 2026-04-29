@@ -34,7 +34,7 @@ jobs:
           VERSION="v$(date -u +%Y%m%d.%H%M%S)"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-          for plugin in homeassistant radarr sonarr lidarr readarr prowlarr; do
+          for plugin in homeassistant radarr sonarr lidarr readarr prowlarr agents; do
             src="target/wasm32-wasip1/release/${plugin}_wasm.wasm"
             dst="dist/${plugin}.wasm"
             if [ ! -f "$src" ]; then
@@ -59,7 +59,7 @@ jobs:
           TAG: ${{ steps.prep.outputs.version }}
           REPO: ${{ github.repository }}
         run: |
-          for plugin in homeassistant radarr sonarr lidarr readarr prowlarr; do
+          for plugin in homeassistant radarr sonarr lidarr readarr prowlarr agents; do
             wasm="dist/${plugin}.wasm"
             sha=$(sha256sum "$wasm" | awk '{print $1}')
             size=$(stat -c%s "$wasm")
