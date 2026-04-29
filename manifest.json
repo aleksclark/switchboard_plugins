@@ -116,6 +116,25 @@
           "changelog": "Initial release — 25 tools: indexers, search, applications, indexer proxies, status, tags, download clients, notifications."
         }
       ]
+    },
+    {
+      "name": "agents",
+      "description": "ARP agent registry and A2A agent interaction — manage projects, workspaces, spawn/stop agents, send messages, discover agents, and route by skill",
+      "author": "aleksclark",
+      "homepage": "https://github.com/aleksclark/switchboard_plugins",
+      "license": "MIT",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "abi_min": 1,
+          "abi_max": 1,
+          "url": "https://github.com/aleksclark/switchboard_plugins/releases/download/UNRELEASED/agents.wasm",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "size": 0,
+          "released_at": "2026-04-29T00:00:00Z",
+          "changelog": "Initial release — 21 tools: project lifecycle, workspace management, agent spawn/stop/restart, A2A messaging, proxy discovery, skill-based routing."
+        }
+      ]
     }
   ]
 }
