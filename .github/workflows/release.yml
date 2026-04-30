@@ -24,6 +24,24 @@ jobs:
         with:
           key: wasm32-wasip1
 
+      - name: Set version
+        id: version
+        run: |
+          TAG="v$(date -u +%Y%m%d.%H%M%S)"
+          # Semver for Cargo.toml: YYYY.MDD.HHMM (all segments fit semver limits)
+          SEMVER="$(date -u +%-Y.%-m%d.%-H%M)"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "semver=$SEMVER" >> "$GITHUB_OUTPUT"
+
+      - name: Inject version into Cargo.toml
+        env:
+          SEMVER: ${{ steps.version.outputs.semver }}
+        run: |
+          for toml in plugins/*/Cargo.toml; do
+            sed -i "s/^version = \".*\"/version = \"${SEMVER}\"/" "$toml"
+            echo "$(basename $(dirname $toml)): version = \"${SEMVER}\""
+          done
+
       - name: Build all plugins
         run: cargo build --target wasm32-wasip1 --release
 
@@ -31,7 +49,7 @@ jobs:
         id: prep
         run: |
           mkdir -p dist
-          VERSION="v$(date -u +%Y%m%d.%H%M%S)"
+          VERSION="${{ steps.version.outputs.tag }}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
           for plugin in homeassistant radarr sonarr lidarr readarr prowlarr agents; do
@@ -57,6 +75,7 @@ jobs:
       - name: Update manifest.json
         env:
           TAG: ${{ steps.prep.outputs.version }}
+          SEMVER: ${{ steps.version.outputs.semver }}
           REPO: ${{ github.repository }}
         run: |
           for plugin in homeassistant radarr sonarr lidarr readarr prowlarr agents; do
@@ -66,8 +85,8 @@ jobs:
             url="https://github.com/${REPO}/releases/download/${TAG}/${plugin}.wasm"
             now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-            # Update the latest version entry for each plugin
             jq --arg name "$plugin" \
+               --arg ver "$SEMVER" \
                --arg url "$url" \
                --arg sha "$sha" \
                --argjson size "$size" \
@@ -75,7 +94,8 @@ jobs:
                '
                .plugins |= map(
                  if .name == $name then
-                   .versions[-1].url = $url
+                   .versions[-1].version = $ver
+                   | .versions[-1].url = $url
                    | .versions[-1].sha256 = $sha
                    | .versions[-1].size = $size
                    | .versions[-1].released_at = $now
