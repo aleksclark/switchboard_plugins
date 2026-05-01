@@ -1,0 +1,76 @@
+syntax = "proto3";
+package arp.v1;
+
+option go_package = "github.com/aleksclark/spec-torture/gen/arp/v1;arpv1";
+
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "arp/v1/types.proto";
+
+// ProjectService manages project configurations.
+// A project defines a repository, branch, and agent templates.
+// Workspaces are created from projects.
+service ProjectService {
+  // Lists all registered projects.
+  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {
+    option (google.api.http) = {
+      get: "/v1/projects"
+    };
+  }
+
+  // Registers a new project configuration.
+  rpc RegisterProject(RegisterProjectRequest) returns (Project) {
+    option (google.api.http) = {
+      post: "/v1/projects"
+      body: "*"
+    };
+  }
+
+  // Unregisters a project. Fails if active workspaces reference it.
+  rpc UnregisterProject(UnregisterProjectRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/projects/{name}"
+    };
+  }
+}
+
+message ListProjectsRequest {}
+
+message ListProjectsResponse {
+  repeated Project projects = 1;
+}
+
+message RegisterProjectRequest {
+  // Unique project name.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  // Path or URL to the git repository.
+  string repo = 2 [(google.api.field_behavior) = REQUIRED];
+  // Default branch for new workspaces.
+  string branch = 3;
+  // Agent templates available for spawning in this project's workspaces.
+  repeated AgentTemplate agents = 4;
+}
+
+message UnregisterProjectRequest {
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// Project is a registered project configuration.
+message Project {
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string repo = 2 [(google.api.field_behavior) = REQUIRED];
+  string branch = 3;
+  repeated AgentTemplate agents = 4;
+  ProjectContext context = 5;
+}
+
+// ProjectContext configures what context files are included for agents.
+message ProjectContext {
+  // Specific files to always include in context.
+  repeated string files = 1;
+  // Glob patterns for repo files to include.
+  repeated string repo_includes = 2;
+  // Maximum context size in bytes.
+  int64 max_bytes = 3;
+}

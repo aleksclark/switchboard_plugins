@@ -1,0 +1,142 @@
+syntax = "proto3";
+package arp.v1;
+
+option go_package = "github.com/aleksclark/spec-torture/gen/arp/v1;arpv1";
+
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+// WorkspaceService manages workspaces — isolated directories (typically
+// git worktrees) where agents operate.
+service WorkspaceService {
+  // Creates a new workspace from a registered project.
+  rpc CreateWorkspace(CreateWorkspaceRequest) returns (Workspace) {
+    option (google.api.http) = {
+      post: "/v1/workspaces"
+      body: "*"
+    };
+  }
+
+  // Lists workspaces, optionally filtered by project or status.
+  rpc ListWorkspaces(ListWorkspacesRequest) returns (ListWorkspacesResponse) {
+    option (google.api.http) = {
+      get: "/v1/workspaces"
+    };
+  }
+
+  // Gets a single workspace by name.
+  rpc GetWorkspace(GetWorkspaceRequest) returns (Workspace) {
+    option (google.api.http) = {
+      get: "/v1/workspaces/{name}"
+    };
+  }
+
+  // Destroys a workspace, stopping all agents and optionally removing
+  // the worktree directory.
+  rpc DestroyWorkspace(DestroyWorkspaceRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/workspaces/{name}"
+    };
+  }
+}
+
+message CreateWorkspaceRequest {
+  // Unique workspace name.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  // Project to create the workspace from. Must be registered.
+  string project = 2 [(google.api.field_behavior) = REQUIRED];
+  // Override branch (defaults to project's default branch).
+  string branch = 3;
+  // Template names to auto-spawn on creation.
+  repeated string auto_agents = 4;
+}
+
+message ListWorkspacesRequest {
+  // Filter by project name.
+  string project = 1;
+  // Filter by workspace status.
+  WorkspaceStatus status = 2;
+}
+
+message ListWorkspacesResponse {
+  repeated Workspace workspaces = 1;
+}
+
+message GetWorkspaceRequest {
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message DestroyWorkspaceRequest {
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  // If true, keep the worktree directory on disk.
+  bool keep_worktree = 2;
+}
+
+// Workspace represents an isolated working directory with agents.
+message Workspace {
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string project = 2 [(google.api.field_behavior) = REQUIRED];
+  // Absolute path to the workspace directory.
+  string dir = 3;
+  WorkspaceStatus status = 4;
+  // Agents currently in this workspace.
+  repeated AgentInstance agents = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Struct metadata = 7;
+}
+
+// WorkspaceStatus indicates whether a workspace is active or inactive.
+enum WorkspaceStatus {
+  WORKSPACE_STATUS_UNSPECIFIED = 0;
+  WORKSPACE_STATUS_ACTIVE = 1;
+  WORKSPACE_STATUS_INACTIVE = 2;
+}
+
+// AgentInstance represents a running (or recently stopped) agent.
+// This is defined here rather than in agent.proto to avoid circular
+// imports — both WorkspaceService and AgentService use it.
+message AgentInstance {
+  // Unique agent instance ID (e.g., UUID or "template-hash").
+  string id = 1;
+  // Template this agent was spawned from.
+  string template = 2;
+  // Workspace the agent belongs to.
+  string workspace = 3;
+  // Current lifecycle status.
+  AgentStatus status = 4;
+  // Port the agent is listening on.
+  int32 port = 5;
+  // Direct URL to the agent's A2A endpoint (bypasses proxy).
+  string direct_url = 6;
+  // Proxy URL through the ARP server.
+  string proxy_url = 7;
+  // OS process ID (0 if remote/container).
+  int32 pid = 8;
+  // Current A2A context ID for the agent's session.
+  string context_id = 9;
+  // The agent's A2A AgentCard (if fetched).
+  // Uses google.protobuf.Struct to avoid importing the full A2A proto.
+  google.protobuf.Struct a2a_agent_card = 10;
+  // Token ID assigned to this agent.
+  string token_id = 11;
+  // ACP/agent session ID.
+  string session_id = 12;
+  // ID of the token that spawned this agent.
+  string spawned_by = 13;
+  google.protobuf.Timestamp started_at = 14;
+  google.protobuf.Struct metadata = 15;
+}
+
+// AgentStatus tracks the lifecycle of an agent instance.
+enum AgentStatus {
+  AGENT_STATUS_UNSPECIFIED = 0;
+  AGENT_STATUS_STARTING = 1;
+  AGENT_STATUS_READY = 2;
+  AGENT_STATUS_BUSY = 3;
+  AGENT_STATUS_ERROR = 4;
+  AGENT_STATUS_STOPPING = 5;
+  AGENT_STATUS_STOPPED = 6;
+}

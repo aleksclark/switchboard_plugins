@@ -1,0 +1,5 @@
+syntax = "proto3";
+package google.api;
+import "google/protobuf/descriptor.proto";
+extend google.protobuf.MethodOptions { optional HttpRule http = 72295728; }
+message HttpRule { string get = 2; string put = 3; string post = 4; string delete = 5; string patch = 6; string body = 7; }

@@ -1,0 +1,156 @@
+syntax = "proto3";
+package arp.v1;
+
+option go_package = "github.com/aleksclark/spec-torture/gen/arp/v1;arpv1";
+
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/struct.proto";
+import "arp/v1/types.proto";
+import "arp/v1/workspace.proto";
+
+// AgentService manages the lifecycle of agent instances within workspaces.
+// Agents are A2A v1.0 compliant — each has an AgentCard, speaks
+// SendMessage/GetTask/CancelTask, and is reachable via both a direct
+// URL and the ARP proxy.
+service AgentService {
+  // Spawns a new agent in a workspace from a project template.
+  rpc SpawnAgent(SpawnAgentRequest) returns (AgentInstance) {
+    option (google.api.http) = {
+      post: "/v1/agents"
+      body: "*"
+    };
+  }
+
+  // Lists agents, optionally filtered by workspace, status, or template.
+  rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse) {
+    option (google.api.http) = {
+      get: "/v1/agents"
+    };
+  }
+
+  // Gets the current status of a single agent.
+  rpc GetAgentStatus(GetAgentStatusRequest) returns (AgentInstance) {
+    option (google.api.http) = {
+      get: "/v1/agents/{agent_id}"
+    };
+  }
+
+  // Sends a message to an agent via the A2A proxy.
+  // The ARP server proxies this to the agent's A2A SendMessage endpoint.
+  rpc SendAgentMessage(SendAgentMessageRequest) returns (SendAgentMessageResponse) {
+    option (google.api.http) = {
+      post: "/v1/agents/{agent_id}/messages"
+      body: "*"
+    };
+  }
+
+  // Creates a task on an agent (convenience wrapper around A2A SendMessage
+  // that always returns a Task).
+  rpc CreateAgentTask(CreateAgentTaskRequest) returns (google.protobuf.Struct) {
+    option (google.api.http) = {
+      post: "/v1/agents/{agent_id}/tasks"
+      body: "*"
+    };
+  }
+
+  // Gets the status of a specific task on an agent.
+  rpc GetAgentTaskStatus(GetAgentTaskStatusRequest) returns (google.protobuf.Struct) {
+    option (google.api.http) = {
+      get: "/v1/agents/{agent_id}/tasks/{task_id}"
+    };
+  }
+
+  // Stops an agent gracefully.
+  rpc StopAgent(StopAgentRequest) returns (AgentInstance) {
+    option (google.api.http) = {
+      post: "/v1/agents/{agent_id}:stop"
+      body: "*"
+    };
+  }
+
+  // Restarts an agent (stop + spawn with same config).
+  rpc RestartAgent(RestartAgentRequest) returns (AgentInstance) {
+    option (google.api.http) = {
+      post: "/v1/agents/{agent_id}:restart"
+      body: "*"
+    };
+  }
+}
+
+message SpawnAgentRequest {
+  // Workspace to spawn the agent in.
+  string workspace = 1 [(google.api.field_behavior) = REQUIRED];
+  // Template name from the project's agent definitions.
+  string template = 2 [(google.api.field_behavior) = REQUIRED];
+  // Optional display name (defaults to template name).
+  string name = 3;
+  // Additional environment variables for this instance.
+  map<string, string> env = 4;
+  // Initial prompt to send after the agent is ready.
+  string prompt = 5;
+  // Scope to assign to the agent's token (must be equal or narrower
+  // than the caller's scope).
+  Scope scope = 6;
+  // Permission level for the agent (must be equal or lower than
+  // the caller's permission).
+  Permission permission = 7;
+}
+
+message ListAgentsRequest {
+  string workspace = 1;
+  AgentStatus status = 2;
+  string template = 3;
+}
+
+message ListAgentsResponse {
+  repeated AgentInstance agents = 1;
+}
+
+message GetAgentStatusRequest {
+  string agent_id = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message SendAgentMessageRequest {
+  string agent_id = 1 [(google.api.field_behavior) = REQUIRED];
+  // Text message to send to the agent.
+  string message = 2 [(google.api.field_behavior) = REQUIRED];
+  // A2A context ID for multi-turn conversations.
+  string context_id = 3;
+  // If true, wait for the agent to reach a terminal state before returning.
+  bool blocking = 4;
+}
+
+// SendAgentMessageResponse wraps the A2A SendMessageResponse oneof.
+// The result is either a Task or a Message, matching the A2A v1.0 spec.
+message SendAgentMessageResponse {
+  oneof result {
+    // The task created or updated by the message.
+    google.protobuf.Struct task = 1;
+    // A direct message response from the agent.
+    google.protobuf.Struct message = 2;
+  }
+}
+
+message CreateAgentTaskRequest {
+  string agent_id = 1 [(google.api.field_behavior) = REQUIRED];
+  string message = 2 [(google.api.field_behavior) = REQUIRED];
+  string context_id = 3;
+}
+
+message GetAgentTaskStatusRequest {
+  string agent_id = 1 [(google.api.field_behavior) = REQUIRED];
+  string task_id = 2 [(google.api.field_behavior) = REQUIRED];
+  // Maximum number of history messages to include.
+  int32 history_length = 3;
+}
+
+message StopAgentRequest {
+  string agent_id = 1 [(google.api.field_behavior) = REQUIRED];
+  // Grace period in milliseconds before force-killing.
+  int32 grace_period_ms = 2;
+}
+
+message RestartAgentRequest {
+  string agent_id = 1 [(google.api.field_behavior) = REQUIRED];
+}

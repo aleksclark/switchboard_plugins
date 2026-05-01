@@ -10,3 +10,8 @@ crate-type = ["cdylib"]
 switchboard-guest-sdk = { git = "https://github.com/daltoniam/switchboard.git" }
 serde.workspace = true
 serde_json.workspace = true
+prost = "0.14"
+prost-types = "0.14"
+
+[build-dependencies]
+prost-build = "0.14"

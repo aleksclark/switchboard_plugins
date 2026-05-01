@@ -1,0 +1,82 @@
+syntax = "proto3";
+package arp.v1;
+
+option go_package = "github.com/aleksclark/spec-torture/gen/arp/v1;arpv1";
+
+import "google/api/field_behavior.proto";
+
+// Shared types referenced across ARP services.
+
+// AgentTemplate defines how to spawn an agent from a project configuration.
+message AgentTemplate {
+  // Template name (e.g., "crush", "hermes", "echo").
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  // Shell command to start the agent process.
+  string command = 2 [(google.api.field_behavior) = REQUIRED];
+  // Environment variable name where the allocated port is injected.
+  string port_env = 3;
+  // Health check configuration for readiness probing.
+  HealthCheckConfig health_check = 4;
+  // Additional environment variables passed to the agent process.
+  map<string, string> env = 5;
+  // Capability tags advertised in the agent's A2A AgentCard skills.
+  repeated string capabilities = 6;
+  // Optional A2A AgentCard configuration override.
+  A2ACardConfig a2a_card_config = 7;
+}
+
+// HealthCheckConfig configures readiness probing for a spawned agent.
+message HealthCheckConfig {
+  // HTTP path for the health check endpoint (e.g., "/.well-known/agent-card.json").
+  string path = 1;
+  // Polling interval in milliseconds.
+  int32 interval_ms = 2;
+  // Timeout per probe in milliseconds.
+  int32 timeout_ms = 3;
+  // Number of retries before declaring the agent unhealthy.
+  int32 retries = 4;
+}
+
+// A2ACardConfig overrides fields in the agent's A2A AgentCard.
+// If the agent provides its own card, these fields are merged on top.
+message A2ACardConfig {
+  string name = 1;
+  string description = 2;
+  // Skills advertised in the card.  If empty, a default skill is
+  // synthesized from the template name and capabilities.
+  repeated AgentSkillConfig skills = 3;
+  repeated string input_modes = 4;
+  repeated string output_modes = 5;
+  bool streaming = 6;
+}
+
+// AgentSkillConfig is a simplified skill definition for project config.
+message AgentSkillConfig {
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 2 [(google.api.field_behavior) = REQUIRED];
+  string description = 3;
+  repeated string tags = 4;
+  repeated string examples = 5;
+}
+
+// Scope constrains which projects a token can access.
+message Scope {
+  // If true, the token has access to all projects.
+  bool global = 1;
+  // Explicit list of project names the token can access.
+  // Ignored if global is true.
+  repeated string projects = 2;
+}
+
+// Permission levels, ordered from least to most privileged.
+// Scope can only narrow and permission can only lower when
+// delegating tokens to child agents.
+enum Permission {
+  PERMISSION_UNSPECIFIED = 0;
+  // Can only interact within a single session.
+  PERMISSION_SESSION = 1;
+  // Can manage workspaces/agents within scoped projects.
+  PERMISSION_PROJECT = 2;
+  // Full administrative access (register projects, create tokens).
+  PERMISSION_ADMIN = 3;
+}
