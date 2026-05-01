@@ -165,8 +165,6 @@ fn grpc_call(service: &str, method: &str, proto_body: &[u8]) -> Result<Vec<u8>, 
     frame.extend_from_slice(&(proto_body.len() as u32).to_be_bytes());
     frame.extend_from_slice(proto_body);
 
-    let body_b64 = base64_encode(&frame);
-
     let mut headers = HashMap::new();
     headers.insert("Content-Type".into(), "application/grpc".into());
     headers.insert("TE".into(), "trailers".into());
@@ -177,12 +175,7 @@ fn grpc_call(service: &str, method: &str, proto_body: &[u8]) -> Result<Vec<u8>, 
     }
 
     let url = format!("{}/{}/{}", base_url(), service, method);
-    let req = sdk::HttpRequest {
-        method: "POST".into(),
-        url,
-        headers,
-        body: body_b64,
-    };
+    let req = sdk::HttpRequest::with_body_bytes("POST", &url, headers, &frame);
 
     let resp = sdk::host_http_request(&req)?;
 
@@ -198,11 +191,7 @@ fn grpc_call(service: &str, method: &str, proto_body: &[u8]) -> Result<Vec<u8>, 
         return Err(format!("gRPC error (http={}, grpc-status={}): {}", resp.status, grpc_status, grpc_message));
     }
 
-    let resp_bytes = if resp.body.is_empty() {
-        Vec::new()
-    } else {
-        base64_decode(&resp.body)?
-    };
+    let resp_bytes = resp.body_bytes()?;
 
     if resp_bytes.len() < 5 {
         let grpc_status = resp.headers.get("grpc-status")
@@ -329,53 +318,6 @@ fn struct_resp_to_json(bytes: &[u8]) -> Result<serde_json::Value, String> {
 }
 
 // ---------------------------------------------------------------------------
-// Base64 (no_std-compatible, no external dep)
-// ---------------------------------------------------------------------------
-
-const B64: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-fn base64_encode(data: &[u8]) -> String {
-    let mut out = String::with_capacity((data.len() + 2) / 3 * 4);
-    for chunk in data.chunks(3) {
-        let b0 = chunk[0] as u32;
-        let b1 = if chunk.len() > 1 { chunk[1] as u32 } else { 0 };
-        let b2 = if chunk.len() > 2 { chunk[2] as u32 } else { 0 };
-        let triple = (b0 << 16) | (b1 << 8) | b2;
-        out.push(B64[((triple >> 18) & 0x3F) as usize] as char);
-        out.push(B64[((triple >> 12) & 0x3F) as usize] as char);
-        if chunk.len() > 1 { out.push(B64[((triple >> 6) & 0x3F) as usize] as char); } else { out.push('='); }
-        if chunk.len() > 2 { out.push(B64[(triple & 0x3F) as usize] as char); } else { out.push('='); }
-    }
-    out
-}
-
-fn base64_decode(s: &str) -> Result<Vec<u8>, String> {
-    let s = s.trim_end_matches('=');
-    let mut out = Vec::with_capacity(s.len() * 3 / 4);
-    let mut buf = 0u32;
-    let mut bits = 0u32;
-    for c in s.bytes() {
-        let val = match c {
-            b'A'..=b'Z' => c - b'A',
-            b'a'..=b'z' => c - b'a' + 26,
-            b'0'..=b'9' => c - b'0' + 52,
-            b'+' => 62,
-            b'/' => 63,
-            b'\n' | b'\r' | b' ' => continue,
-            _ => return Err(format!("invalid base64 char: {}", c as char)),
-        };
-        buf = (buf << 6) | val as u32;
-        bits += 6;
-        if bits >= 8 {
-            bits -= 8;
-            out.push((buf >> bits) as u8);
-            buf &= (1 << bits) - 1;
-        }
-    }
-    Ok(out)
-}
-
-// ---------------------------------------------------------------------------
 // Arg helpers
 // ---------------------------------------------------------------------------
 
@@ -442,6 +384,7 @@ fn a2a_get(path: &str) -> Result<String, String> {
         url: format!("{}{}", base_url(), path),
         headers: a2a_headers(),
         body: String::new(),
+        body_base64: String::new(),
     };
     let resp = sdk::host_http_request(&req)?;
     if resp.status >= 400 {
@@ -457,6 +400,7 @@ fn a2a_post(path: &str, body: &str) -> Result<String, String> {
         url: format!("{}{}", base_url(), path),
         headers: a2a_headers(),
         body: body.to_string(),
+        body_base64: String::new(),
     };
     let resp = sdk::host_http_request(&req)?;
     if resp.status >= 400 {
