@@ -183,6 +183,7 @@ fn do_get(path: &str) -> Result<String, String> {
         url: format!("{}{}", base_url(), path),
         headers: auth_headers(),
         body: String::new(),
+        body_base64: String::new(),
     };
     let resp = sdk::host_http_request(&req)?;
     if resp.status >= 400 {
@@ -197,6 +198,7 @@ fn do_post(path: &str, body: &str) -> Result<String, String> {
         url: format!("{}{}", base_url(), path),
         headers: auth_headers(),
         body: body.to_string(),
+        body_base64: String::new(),
     };
     let resp = sdk::host_http_request(&req)?;
     if resp.status >= 400 {
@@ -214,6 +216,7 @@ fn do_put(path: &str, body: &str) -> Result<String, String> {
         url: format!("{}{}", base_url(), path),
         headers: auth_headers(),
         body: body.to_string(),
+        body_base64: String::new(),
     };
     let resp = sdk::host_http_request(&req)?;
     if resp.status >= 400 {
@@ -231,6 +234,7 @@ fn do_delete(path: &str) -> Result<String, String> {
         url: format!("{}{}", base_url(), path),
         headers: auth_headers(),
         body: String::new(),
+        body_base64: String::new(),
     };
     let resp = sdk::host_http_request(&req)?;
     if resp.status >= 400 {
