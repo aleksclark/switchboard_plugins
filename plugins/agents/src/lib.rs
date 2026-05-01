@@ -163,6 +163,7 @@ fn grpc_call(service: &str, method: &str, proto_body: &[u8]) -> Result<Vec<u8>, 
     headers.insert("Content-Type".into(), "application/grpc".into());
     headers.insert("TE".into(), "trailers".into());
     headers.insert("X-H2C".into(), "1".into());
+    headers.insert("X-Raw-Body".into(), "1".into());
     let tok = token();
     if !tok.is_empty() {
         headers.insert("Authorization".into(), format!("Bearer {}", tok));
@@ -189,7 +190,13 @@ fn grpc_call(service: &str, method: &str, proto_body: &[u8]) -> Result<Vec<u8>, 
         return Ok(Vec::new());
     }
 
+    let flag = resp_bytes[0];
     let len = u32::from_be_bytes([resp_bytes[1], resp_bytes[2], resp_bytes[3], resp_bytes[4]]) as usize;
+
+    if flag & 0x80 != 0 {
+        return Ok(Vec::new());
+    }
+
     if resp_bytes.len() < 5 + len {
         return Err("gRPC response truncated".into());
     }
