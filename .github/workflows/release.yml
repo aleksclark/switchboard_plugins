@@ -20,6 +20,11 @@ jobs:
         with:
           targets: wasm32-wasip1
 
+      - name: Install protoc
+        run: |
+          sudo apt-get update -q && sudo apt-get install -yq protobuf-compiler
+          protoc --version
+
       - uses: Swatinem/rust-cache@v2
         with:
           key: wasm32-wasip1
