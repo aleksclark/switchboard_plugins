@@ -1,0 +1,5 @@
+syntax = "proto3";
+package google.api;
+import "google/protobuf/descriptor.proto";
+enum FieldBehavior { FIELD_BEHAVIOR_UNSPECIFIED = 0; OPTIONAL = 1; REQUIRED = 2; }
+extend google.protobuf.FieldOptions { repeated FieldBehavior field_behavior = 1052; }

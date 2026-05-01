@@ -1,0 +1,57 @@
+syntax = "proto3";
+package arp.v1;
+
+option go_package = "github.com/aleksclark/spec-torture/gen/arp/v1;arpv1";
+
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "arp/v1/types.proto";
+
+// TokenService manages bearer tokens for ARP authentication.
+// Tokens carry a scope (which projects) and permission level.
+// When delegating tokens to spawned agents, scope can only narrow
+// and permission can only lower — no escalation is possible.
+service TokenService {
+  // Creates a new bearer token with the specified scope and permission.
+  // The new token's scope must be equal or narrower than the caller's,
+  // and its permission must be equal or lower.
+  rpc CreateToken(CreateTokenRequest) returns (CreateTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/tokens"
+      body: "*"
+    };
+  }
+}
+
+message CreateTokenRequest {
+  // Human-readable subject (e.g., agent name, user ID).
+  string subject = 1 [(google.api.field_behavior) = REQUIRED];
+  // Scope for the new token.
+  Scope scope = 2 [(google.api.field_behavior) = REQUIRED];
+  // Permission level for the new token.
+  Permission permission = 3 [(google.api.field_behavior) = REQUIRED];
+  // Token lifetime in seconds. 0 means no expiry.
+  int32 expires_in_seconds = 4;
+}
+
+message CreateTokenResponse {
+  // The created token metadata.
+  Token token = 1;
+  // The raw bearer token string to use in authorization headers.
+  string bearer_token = 2;
+}
+
+// Token represents an issued authentication token.
+message Token {
+  string id = 1;
+  string subject = 2;
+  Scope scope = 3;
+  Permission permission = 4;
+  // Session this token is bound to (if any).
+  string session_id = 5;
+  google.protobuf.Timestamp issued_at = 6;
+  google.protobuf.Timestamp expires_at = 7;
+  // ID of the parent token that created this one (for audit trail).
+  string parent_token_id = 8;
+}

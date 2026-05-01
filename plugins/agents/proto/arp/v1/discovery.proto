@@ -1,0 +1,100 @@
+syntax = "proto3";
+package arp.v1;
+
+option go_package = "github.com/aleksclark/spec-torture/gen/arp/v1;arpv1";
+
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/struct.proto";
+import "arp/v1/workspace.proto";
+
+// DiscoveryService provides agent discovery and real-time event streaming.
+service DiscoveryService {
+  // Discovers agents matching optional filters (scope, capability, URLs).
+  // Returns enriched AgentCards with ARP metadata.
+  rpc DiscoverAgents(DiscoverAgentsRequest) returns (DiscoverAgentsResponse) {
+    option (google.api.http) = {
+      get: "/v1/discover"
+    };
+  }
+
+  // Streams real-time events for a specific agent (status changes,
+  // card updates, stop events).
+  rpc WatchAgent(WatchAgentRequest) returns (stream AgentEvent) {
+    option (google.api.http) = {
+      get: "/v1/agents/{agent_id}:watch"
+    };
+  }
+
+  // Streams real-time events for all agents in a workspace (spawns,
+  // status changes, stops, workspace destruction).
+  rpc WatchWorkspace(WatchWorkspaceRequest) returns (stream WorkspaceEvent) {
+    option (google.api.http) = {
+      get: "/v1/workspaces/{workspace_name}:watch"
+    };
+  }
+}
+
+message DiscoverAgentsRequest {
+  // Scope of discovery.
+  DiscoveryScope scope = 1;
+  // Filter by capability/skill tag.
+  string capability = 2;
+  // Explicit agent URLs to probe (for NETWORK scope federation).
+  repeated string urls = 3;
+}
+
+message DiscoverAgentsResponse {
+  // Enriched AgentCards with ARP metadata.
+  // Uses google.protobuf.Struct to avoid importing the full A2A proto
+  // while preserving the AgentCard schema.
+  repeated google.protobuf.Struct agent_cards = 1;
+}
+
+// DiscoveryScope controls how broadly to search for agents.
+enum DiscoveryScope {
+  DISCOVERY_SCOPE_UNSPECIFIED = 0;
+  // Only agents managed by this ARP instance.
+  DISCOVERY_SCOPE_LOCAL = 1;
+  // Also probe federated ARP instances and explicit URLs.
+  DISCOVERY_SCOPE_NETWORK = 2;
+}
+
+message WatchAgentRequest {
+  string agent_id = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// AgentEvent is a real-time notification about an agent.
+message AgentEvent {
+  AgentEventType event_type = 1;
+  AgentInstance agent = 2;
+  // Updated AgentCard (present for CARD_UPDATED events).
+  google.protobuf.Struct agent_card = 3;
+}
+
+enum AgentEventType {
+  AGENT_EVENT_TYPE_UNSPECIFIED = 0;
+  AGENT_EVENT_TYPE_STATUS_CHANGED = 1;
+  AGENT_EVENT_TYPE_CARD_UPDATED = 2;
+  AGENT_EVENT_TYPE_STOPPED = 3;
+}
+
+message WatchWorkspaceRequest {
+  string workspace_name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// WorkspaceEvent is a real-time notification about a workspace.
+message WorkspaceEvent {
+  WorkspaceEventType event_type = 1;
+  Workspace workspace = 2;
+  // The agent involved (present for agent-related events).
+  AgentInstance agent = 3;
+}
+
+enum WorkspaceEventType {
+  WORKSPACE_EVENT_TYPE_UNSPECIFIED = 0;
+  WORKSPACE_EVENT_TYPE_AGENT_SPAWNED = 1;
+  WORKSPACE_EVENT_TYPE_AGENT_STATUS_CHANGED = 2;
+  WORKSPACE_EVENT_TYPE_AGENT_STOPPED = 3;
+  WORKSPACE_EVENT_TYPE_WORKSPACE_DESTROYED = 4;
+}
