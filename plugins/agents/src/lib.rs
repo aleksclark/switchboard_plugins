@@ -10,6 +10,7 @@ static CONFIG: Mutex<Option<Config>> = Mutex::new(None);
 struct Config {
     base_url: String,
     token: String,
+    h2c: bool,
 }
 
 fn with_config<F, R>(f: F) -> R
@@ -44,12 +45,13 @@ pub extern "C" fn metadata() -> u64 {
         homepage: "https://github.com/aleksclark/switchboard_plugins".into(),
         license: "MIT".into(),
         capabilities: vec!["http".into()],
-        credential_keys: vec!["base_url".into(), "token".into()],
-        plain_text_keys: vec!["base_url".into()],
-        optional_keys: vec!["token".into()],
+        credential_keys: vec!["base_url".into(), "token".into(), "h2c".into()],
+        plain_text_keys: vec!["base_url".into(), "h2c".into()],
+        optional_keys: vec!["token".into(), "h2c".into()],
         placeholders: HashMap::from([
             ("base_url".into(), "http://localhost:9099".into()),
             ("token".into(), "arp-bearer-token (optional for localhost)".into()),
+            ("h2c".into(), "false (set true for gRPC/h2c transport to port 9098)".into()),
         ]),
     })
 }
@@ -79,9 +81,15 @@ pub extern "C" fn configure(ptr_size: u64) -> u64 {
 
     let tok = creds.get("token").cloned().unwrap_or_default();
 
+    let h2c = creds
+        .get("h2c")
+        .map(|s| matches!(s.as_str(), "true" | "1" | "yes"))
+        .unwrap_or(false);
+
     *CONFIG.lock().unwrap() = Some(Config {
         base_url: bu,
         token: tok,
+        h2c,
     });
     0
 }
@@ -157,7 +165,23 @@ fn auth_headers() -> HashMap<String, String> {
         h.insert("Authorization".into(), format!("Bearer {}", tok));
     }
     h.insert("Content-Type".into(), "application/json".into());
+    // When h2c is enabled, add the X-H2C header so the Switchboard host
+    // upgrades the connection to HTTP/2 cleartext (h2c). This is needed
+    // when talking directly to the gRPC/h2c port (e.g. 9098).
+    if with_config(|c| c.h2c) {
+        h.insert("X-H2C".into(), "1".into());
+    }
     h
+}
+
+/// Normalize an empty or whitespace-only response body into valid JSON.
+/// Several ARP endpoints return 200 with no body for success; this ensures
+/// callers always get parseable JSON back.
+fn normalize_body(body: String) -> String {
+    if body.trim().is_empty() {
+        return r#"{"status":"success"}"#.into();
+    }
+    body
 }
 
 fn do_get(path: &str) -> Result<String, String> {
@@ -171,7 +195,7 @@ fn do_get(path: &str) -> Result<String, String> {
     if resp.status >= 400 {
         return Err(format!("ARP error ({}): {}", resp.status, resp.body));
     }
-    Ok(resp.body)
+    Ok(normalize_body(resp.body))
 }
 
 fn do_post(path: &str, body: &str) -> Result<String, String> {
@@ -185,10 +209,7 @@ fn do_post(path: &str, body: &str) -> Result<String, String> {
     if resp.status >= 400 {
         return Err(format!("ARP error ({}): {}", resp.status, resp.body));
     }
-    if resp.body.is_empty() {
-        return Ok(r#"{"status":"success"}"#.into());
-    }
-    Ok(resp.body)
+    Ok(normalize_body(resp.body))
 }
 
 fn do_delete(path: &str) -> Result<String, String> {
@@ -202,10 +223,7 @@ fn do_delete(path: &str) -> Result<String, String> {
     if resp.status >= 400 {
         return Err(format!("ARP error ({}): {}", resp.status, resp.body));
     }
-    if resp.body.is_empty() {
-        return Ok(r#"{"status":"success"}"#.into());
-    }
-    Ok(resp.body)
+    Ok(normalize_body(resp.body))
 }
 
 fn require_arg(args: &HashMap<String, serde_json::Value>, key: &str) -> Result<String, sdk::ToolResult> {
