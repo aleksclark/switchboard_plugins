@@ -1,2 +1,3 @@
 /target/
 .crush
+tools/wasm-debug/wasm-debug
