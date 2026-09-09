@@ -32,6 +32,8 @@ jobs:
 
       - name: Build all plugins
         run: cargo build --target wasm32-wasip1 --release
+        env:
+          RUSTFLAGS: -C link-arg=--allow-undefined
 
       - name: Verify WASM outputs exist
         run: |
