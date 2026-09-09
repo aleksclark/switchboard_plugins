@@ -20,12 +20,22 @@ jobs:
         with:
           key: wasm32-wasip1
 
+      - name: Install protobuf compiler
+        run: |
+          PROTOC_VERSION=29.3
+          archive="protoc-${PROTOC_VERSION}-linux-x86_64.zip"
+          gh release download "v${PROTOC_VERSION}" --repo protocolbuffers/protobuf --pattern "$archive"
+          unzip -q "$archive" -d "$RUNNER_TEMP/protoc"
+          echo "$RUNNER_TEMP/protoc/bin" >> "$GITHUB_PATH"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - name: Build all plugins
         run: cargo build --target wasm32-wasip1 --release
 
       - name: Verify WASM outputs exist
         run: |
-          for plugin in homeassistant radarr sonarr lidarr readarr prowlarr; do
+          for plugin in homeassistant radarr sonarr lidarr readarr prowlarr agents primer; do
             file="target/wasm32-wasip1/release/${plugin}_wasm.wasm"
             if [ ! -f "$file" ]; then
               echo "MISSING: $file"
