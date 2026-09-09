@@ -11,7 +11,7 @@ struct Config {
     tv_base_url: String,
     tv_admin_key: String,
     tasks_base_url: String,
-    tasks_token: String,
+    tasks_api_key: String,
 }
 
 #[no_mangle]
@@ -34,7 +34,7 @@ pub extern "C" fn metadata() -> u64 {
             "tv_base_url".into(),
             "tv_admin_key".into(),
             "tasks_base_url".into(),
-            "tasks_token".into(),
+            "tasks_api_key".into(),
         ],
         plain_text_keys: vec!["tv_base_url".into(), "tasks_base_url".into()],
         optional_keys: vec![],
@@ -46,8 +46,8 @@ pub extern "C" fn metadata() -> u64 {
                 "http://primer-tasks:8082/tasks/api".into(),
             ),
             (
-                "tasks_token".into(),
-                "Primer Tasks parent bearer token".into(),
+                "tasks_api_key".into(),
+                "Primer Tasks tenant-scoped service API key".into(),
             ),
         ]),
     })
@@ -77,15 +77,15 @@ pub extern "C" fn configure(ptr_size: u64) -> u64 {
     if tasks_base_url.is_empty() {
         return sdk::leaked_string("primer: tasks_base_url is required");
     }
-    let tasks_token = credential(&credentials, "tasks_token");
-    if tasks_token.is_empty() {
-        return sdk::leaked_string("primer: tasks_token is required");
+    let tasks_api_key = credential(&credentials, "tasks_api_key");
+    if tasks_api_key.is_empty() {
+        return sdk::leaked_string("primer: tasks_api_key is required");
     }
     *CONFIG.lock().unwrap() = Some(Config {
         tv_base_url: tv_base_url.trim_end_matches('/').into(),
         tv_admin_key,
         tasks_base_url: tasks_base_url.trim_end_matches('/').into(),
-        tasks_token,
+        tasks_api_key,
     });
     0
 }
@@ -428,7 +428,7 @@ fn request(service: Service, method: &str, path: &str, body: String) -> Result<S
         Service::Tasks => (
             &config.tasks_base_url,
             "Authorization",
-            format!("Bearer {}", config.tasks_token),
+            format!("Bearer {}", config.tasks_api_key),
         ),
     };
     let response = sdk::host_http_request(&sdk::HttpRequest {
