@@ -135,6 +135,25 @@
           "changelog": "Initial release — 21 tools: project lifecycle, workspace management, agent spawn/stop/restart, A2A messaging, proxy discovery, skill-based routing."
         }
       ]
+    },
+    {
+      "name": "primer",
+      "description": "Primer homeschool operations integration — administer Primer TV, task assignments, schedules, verification, and content ingest",
+      "author": "aleksclark",
+      "homepage": "https://github.com/aleksclark/switchboard_plugins",
+      "license": "MIT",
+      "versions": [
+        {
+          "version": "2026.909.1253",
+          "abi_min": 1,
+          "abi_max": 1,
+          "url": "https://github.com/aleksclark/switchboard_plugins/releases/download/v20260909.125344/primer.wasm",
+          "sha256": "7693cc44d980b7e4fda8374ddae8f5720ad61dd164114a04df029ec79f97fe6f",
+          "size": 158023,
+          "released_at": "2026-09-09T12:53:44Z",
+          "changelog": "Initial release — 39 tools for Primer TV catalog and scheduling, Primer Tasks assignments and verification, and content ingest reconciliation."
+        }
+      ]
     }
   ]
 }
