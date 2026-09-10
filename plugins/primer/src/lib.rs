@@ -322,10 +322,20 @@ fn query_request(
     args: &HashMap<String, Value>,
     keys: &[&str],
 ) -> sdk::ToolResult {
+    let full_path = query_path(path, args, keys);
+    request_result(service, method, &full_path, String::new())
+}
+
+fn query_path(path: &str, args: &HashMap<String, Value>, keys: &[&str]) -> String {
     let query = keys
         .iter()
         .filter_map(|key| {
-            let value = sdk::arg_str(args, key);
+            let value = match args.get(*key) {
+                Some(Value::Number(_)) => sdk::arg_int(args, key)
+                    .map(|value| value.to_string())
+                    .unwrap_or_default(),
+                _ => sdk::arg_str(args, key),
+            };
             if value.is_empty() {
                 None
             } else {
@@ -340,12 +350,11 @@ fn query_request(
             }
         })
         .collect::<Vec<_>>();
-    let full_path = if query.is_empty() {
+    if query.is_empty() {
         path.into()
     } else {
         format!("{path}?{}", query.join("&"))
-    };
-    request_result(service, method, &full_path, String::new())
+    }
 }
 
 fn content_attempt(args: &HashMap<String, Value>) -> sdk::ToolResult {
@@ -490,6 +499,21 @@ mod tests {
         assert!(definitions
             .iter()
             .any(|tool| tool.description.contains("Start here")));
+    }
+
+    #[test]
+    fn preserves_numeric_pagination_and_encodes_filters() {
+        let args = HashMap::from([
+            ("limit".into(), serde_json::json!(1)),
+            ("offset".into(), serde_json::json!(0)),
+            ("q".into(), serde_json::json!("read & learn")),
+        ]);
+        assert_eq!(
+            query_path("/tasks", &args, &["limit", "offset", "q"]),
+            "/tasks?limit=1&offset=0&q=read%20%26%20learn"
+        );
+        let args = HashMap::from([("limit".into(), serde_json::json!("2"))]);
+        assert_eq!(query_path("/tasks", &args, &["limit"]), "/tasks?limit=2");
     }
 
     #[test]
