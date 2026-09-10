@@ -7,6 +7,24 @@ on:
     branches: [master]
 
 jobs:
+  primer-auth:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/primer-auth
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: tools/primer-auth/go.mod
+          cache-dependency-path: tools/primer-auth/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: go test -race ./...
+      - run: go vet ./...
+      - run: go build ./...
+
   build:
     runs-on: ubuntu-latest
     steps:

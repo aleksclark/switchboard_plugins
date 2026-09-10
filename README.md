@@ -12,6 +12,7 @@ Community WASM plugins for [Switchboard](https://github.com/daltoniam/switchboar
 | [lidarr](plugins/lidarr/) | 27 | Lidarr music manager — artists, albums, calendar, queue, history, quality/metadata profiles |
 | [readarr](plugins/readarr/) | 29 | Readarr book manager — authors, books, calendar, queue, history, quality/metadata profiles |
 | [prowlarr](plugins/prowlarr/) | 25 | Prowlarr indexer manager — indexers, search, applications, download clients |
+| [primer](plugins/primer/) | 39 | Primer TV catalog, Tasks assignments, and content ingest |
 
 ## Installing
 
@@ -25,6 +26,20 @@ Or install directly by URL:
 ```
 https://github.com/aleksclark/switchboard_plugins/raw/main/dist/homeassistant.wasm
 ```
+
+## Primer authentication
+
+Primer TV and content ingest use `tv_base_url` and `tv_admin_key`. Tasks uses
+`tasks_base_url` and `tasks_api_key`; its service-key support must be deployed
+before an operator-issued key can work.
+
+For deployments accepting only human Clerk sessions, the optional
+[local browser auth companion](tools/primer-auth/README.md) uses the signed-in
+managed browser, checks the expected user and household on every request, and
+keeps Clerk JWTs inside Chromium. It is not a standalone OAuth/OIDC provider or
+an unattended credential. The repository's `primer-auth` Paseo script supervises
+the installed companion. Keep the Tasks tab signed in; restart the companion
+after recovering a failed browser session.
 
 ## Building from source
 
