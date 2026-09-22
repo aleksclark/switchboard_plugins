@@ -21,9 +21,13 @@ pub extern "C" fn name() -> u64 {
 
 #[no_mangle]
 pub extern "C" fn metadata() -> u64 {
-    sdk::leaked_metadata(&sdk::PluginMetadata {
+    sdk::leaked_metadata(&plugin_metadata())
+}
+
+fn plugin_metadata() -> sdk::PluginMetadata {
+    sdk::PluginMetadata {
         name: "primer".into(),
-        version: "0.1.0".into(),
+        version: env!("CARGO_PKG_VERSION").into(),
         abi_version: 1,
         description: "Administer Primer TV, Primer Tasks, and Primer content ingest".into(),
         author: "aleksclark".into(),
@@ -35,9 +39,32 @@ pub extern "C" fn metadata() -> u64 {
             "tv_admin_key".into(),
             "tasks_base_url".into(),
             "tasks_api_key".into(),
+            "oauth_issuer".into(),
+            "oauth_client_id".into(),
+            "oauth_scopes".into(),
+            "oauth_token_key".into(),
+            "oauth_subject".into(),
+            "oauth_email".into(),
         ],
-        plain_text_keys: vec!["tv_base_url".into(), "tasks_base_url".into()],
-        optional_keys: vec![],
+        plain_text_keys: vec![
+            "tv_base_url".into(),
+            "tasks_base_url".into(),
+            "oauth_issuer".into(),
+            "oauth_client_id".into(),
+            "oauth_scopes".into(),
+            "oauth_token_key".into(),
+            "oauth_subject".into(),
+            "oauth_email".into(),
+        ],
+        optional_keys: vec![
+            "tasks_api_key".into(),
+            "oauth_issuer".into(),
+            "oauth_client_id".into(),
+            "oauth_scopes".into(),
+            "oauth_token_key".into(),
+            "oauth_subject".into(),
+            "oauth_email".into(),
+        ],
         placeholders: HashMap::from([
             ("tv_base_url".into(), "http://primer-tv:8081/api/v1".into()),
             ("tv_admin_key".into(), "Primer TV admin API key".into()),
@@ -47,10 +74,25 @@ pub extern "C" fn metadata() -> u64 {
             ),
             (
                 "tasks_api_key".into(),
-                "Primer Tasks tenant-scoped service API key".into(),
+                "Leave blank for native OAuth; otherwise use a Tasks service API key".into(),
             ),
+            ("oauth_issuer".into(), "https://clerk.primerlms.com".into()),
+            (
+                "oauth_client_id".into(),
+                "Registered public Clerk OAuth client ID".into(),
+            ),
+            (
+                "oauth_scopes".into(),
+                "openid profile email offline_access tasks:read tasks:write".into(),
+            ),
+            ("oauth_token_key".into(), "tasks_api_key".into()),
+            (
+                "oauth_subject".into(),
+                "Expected Clerk user ID (user_...)".into(),
+            ),
+            ("oauth_email".into(), "Expected Clerk account email".into()),
         ]),
-    })
+    }
 }
 
 #[no_mangle]
@@ -482,6 +524,37 @@ fn percent_encode(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn metadata_exposes_native_oauth_setup_without_token_storage() {
+        let meta = plugin_metadata();
+        for key in [
+            "oauth_issuer",
+            "oauth_client_id",
+            "oauth_scopes",
+            "oauth_token_key",
+            "oauth_subject",
+            "oauth_email",
+        ] {
+            assert!(meta.credential_keys.contains(&key.to_string()));
+            assert!(meta.plain_text_keys.contains(&key.to_string()));
+            assert!(meta.optional_keys.contains(&key.to_string()));
+            assert!(meta.placeholders.contains_key(key));
+        }
+        for key in [
+            "oauth_access_token",
+            "oauth_refresh_token",
+            "oauth_client_secret",
+        ] {
+            assert!(!meta.credential_keys.contains(&key.to_string()));
+        }
+        for key in ["tasks_api_key", "tv_admin_key"] {
+            assert!(!meta.plain_text_keys.contains(&key.to_string()));
+        }
+        assert!(meta.optional_keys.contains(&"tasks_api_key".to_string()));
+        assert_eq!(meta.placeholders["oauth_token_key"], "tasks_api_key");
+        assert_eq!(meta.version, env!("CARGO_PKG_VERSION"));
+    }
 
     #[test]
     fn tool_names_are_unique_and_discoverable() {

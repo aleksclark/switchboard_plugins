@@ -18,11 +18,12 @@ cargo build --target wasm32-wasip1 --release
 rustup target add wasm32-wasip1
 ```
 
-CI builds all WASM plugins and tests the optional Primer browser-auth companion.
+CI builds all WASM plugins and retains tests for the retired Primer companion.
 Primer gates: `cargo test -p primer-wasm`, `cargo fmt -p primer-wasm --check`.
-From `tools/primer-auth`, run `go test -race ./...`, `go vet ./...`, and `go build ./...`.
-The companion uses status-only browser discovery and direct CDP without persisting
-Clerk tokens. Its configuration and operational limits are in `tools/primer-auth/README.md`.
+Primer uses native Switchboard OAuth, documented in `plugins/primer/README.md`.
+Do not configure a companion or persist browser session JWTs for Tasks access.
+Historical companion gates remain in `tools/primer-auth`: `go test -race ./...`,
+`go vet ./...`, and `go build ./...`.
 
 ## Architecture
 

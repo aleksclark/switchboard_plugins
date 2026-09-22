@@ -1,4 +1,9 @@
-# Primer browser auth companion
+# Primer browser auth companion (retired)
+
+**Do not use for new installations.** Use [native Switchboard OAuth](../../plugins/primer/README.md)
+instead. It needs a browser only for initial consent and refreshes tokens inside
+Switchboard. The text below records the former implementation and its historical
+requirements, not the current production authentication recommendation.
 
 A user-authorized, local Switchboard Tasks companion. This is a separate Go 1.25 module using `github.com/coder/websocket` v1.8.14 for the native CDP client. `golang.org/x/net/websocket` v0.53.0 is used only by fake test servers. The live Tasks deployment currently accepts human Clerk JWTs; merged service-key support is not deployed. This tool uses an existing, explicitly signed-in human browser session. It does not invent OAuth flows, log in, copy JWTs into Go, or persist tokens.
 
