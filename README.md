@@ -29,17 +29,17 @@ https://github.com/aleksclark/switchboard_plugins/raw/main/dist/homeassistant.wa
 
 ## Primer authentication
 
-Primer TV and content ingest use `tv_base_url` and `tv_admin_key`. Tasks uses
-`tasks_base_url` and `tasks_api_key`; its service-key support must be deployed
-before an operator-issued key can work.
+Use [Primer's native OAuth setup](plugins/primer/README.md) with a Switchboard
+build containing native WASM OAuth support. Switchboard handles Clerk PKCE login,
+refresh tokens, and token renewal itself; a browser is needed only for initial
+consent or reauthorization. No companion process, CDP, or open browser is needed
+for tool calls.
 
-For deployments accepting only human Clerk sessions, the optional
-[local browser auth companion](tools/primer-auth/README.md) uses the signed-in
-managed browser, checks the expected user and household on every request, and
-keeps Clerk JWTs inside Chromium. It is not a standalone OAuth/OIDC provider or
-an unattended credential. The repository's `primer-auth` Paseo script supervises
-the installed companion. Keep the Tasks tab signed in; restart the companion
-after recovering a failed browser session.
+Primer TV and content ingest use `tv_base_url` and `tv_admin_key`. Tasks connects
+directly to its production API. OAuth setup fields appear in the plugin form;
+leave `tasks_api_key` blank in OAuth mode because the host supplies the access
+token. A separately issued Tasks service key remains an alternative when the
+server supports it. The former browser-auth companion is retired.
 
 ## Building from source
 

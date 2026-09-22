@@ -1,7 +1,3 @@
 {
-  "scripts": {
-    "primer-auth": {
-      "command": "$HOME/.local/bin/primer-auth -config $HOME/.config/primer-auth/config.json"
-    }
-  }
+  "scripts": {}
 }
