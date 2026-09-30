@@ -56,6 +56,14 @@ jobs:
         env:
           RUSTFLAGS: -C link-arg=--allow-undefined
 
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: tools/wasm-debug/go.mod
+          cache-dependency-path: tools/wasm-debug/go.sum
+
+      - name: Verify Primer device discovery through WASM exports
+        run: go -C tools/wasm-debug test -race ./...
+
       - name: Verify WASM outputs exist
         run: |
           for plugin in homeassistant radarr sonarr lidarr readarr prowlarr agents primer; do
