@@ -1,3 +1,4 @@
+mod devices;
 mod tools;
 
 use serde_json::Value;
@@ -185,7 +186,11 @@ fn dispatch(name: &str, args: HashMap<String, Value>) -> sdk::ToolResult {
         "primer_delete_schedule_entry" => {
             id_request(Service::Tv, "DELETE", "/schedule-entries", &args)
         }
-        "primer_list_tv_devices" => list(Service::Tv, "/devices", &args),
+        "primer_list_tv_devices" | "primer_get_tv_device" => {
+            devices::execute(name == "primer_get_tv_device", &args, |path| {
+                request(Service::Tv, "GET", path, String::new())
+            })
+        }
         "primer_list_content_manifest_entries" => {
             list(Service::Tv, "/content-manifest-entries", &args)
         }
@@ -572,6 +577,32 @@ mod tests {
         assert!(definitions
             .iter()
             .any(|tool| tool.description.contains("Start here")));
+    }
+
+    #[test]
+    fn tv_device_discovery_explains_assignment_selection() {
+        let definitions = tools::tool_definitions();
+        let list = definitions
+            .iter()
+            .find(|tool| tool.name == "primer_list_tv_devices")
+            .expect("TV device list must be registered");
+        for term in [
+            "Start here",
+            "device",
+            "video_watch",
+            "deviceId",
+            "pairing codes",
+        ] {
+            assert!(
+                list.description.contains(term),
+                "missing discovery guidance: {term}"
+            );
+        }
+        let get = definitions
+            .iter()
+            .find(|tool| tool.name == "primer_get_tv_device")
+            .expect("selected TV device lookup must be registered");
+        assert_eq!(get.required, vec!["id"]);
     }
 
     #[test]

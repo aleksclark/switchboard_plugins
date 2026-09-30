@@ -1,9 +1,63 @@
 # Primer
 
-39 tools for Primer TV catalog/programming, Tasks assignments and verification,
+40 tools for Primer TV catalog/programming, Tasks assignments and verification,
 and content ingest manifests. The plugin uses Switchboard's HTTP host capability.
 Content ingest tools manage the TV-side manifest and catalog; they do not run the
 batch acquisition CLI.
+
+## Discover TV devices for viewing tasks
+
+Use `primer_list_tv_devices` to find a playback target, then
+`primer_get_tv_device` with its `id` to recheck the selection. The list tool
+already existed; this update adds assignment-focused discovery guidance, a
+single-device lookup and credential-safe results rather than a second list alias.
+If keyword search misses it, enumerate the `primer` integration or search for the
+exact tool name. A running host needs the updated WASM installed/reloaded to
+expose the new lookup; opening or merging a PR does not update the running host.
+
+Both tools are read-only and use the existing `tv_base_url` plus `tv_admin_key`
+against TV's `/devices` boundary. They never use a Tasks OAuth token for TV, alter
+pairing, or expose pairing codes, pairing expiry, token hashes or future unknown
+fields. API/transport errors are reported without echoing response bodies.
+
+List arguments: `limit` (1-200, default 20), `offset` (0-1,000,000, default 0),
+`q` (device name, at most 200 characters), `sort`, `dir`, and optional
+`filter: "kind:tv_box"` or `"kind:tablet"`. Results retain the server's
+`totalCount`, `limit`, and `offset`; unpaired/revoked records are not silently
+filtered out, so counts and pagination remain honest. Follow all pages when
+looking for a device.
+
+Each item exposes only `id`, `name`, `kind`, optional `pairedAt`, `revokedAt`,
+`lastSeenAt`, and derived `assignmentReady`. Readiness requires a nonempty pairing
+timestamp, no revocation, and an empty outstanding pairing code. Missing pairing
+state is not assumed ready. This is a discovery snapshot, not authority to assign:
+Tasks revalidates the selection against its own TV integration and household.
+The TV administrator credential is scoped to that TV service, not a Tasks household.
+
+Viewing-task workflow:
+
+1. Discover Amos (or another student) with `primer_list_students`.
+2. Find the exact episode using `primer_list_media_items`.
+3. List/recheck the intended playback device; require `assignmentReady: true`.
+4. Use the returned `id` as `config.deviceId` and `name` as `config.deviceName`
+   in `primer_create_task` with `kind: "video_watch"`, `interaction: "external"`,
+   `executor: "primertv"`, and catalog `mediaId`, `title`, `runtimeSeconds`.
+5. Publish with `primer_publish_task`, then assign with
+   `primer_create_task_schedule`. Structured `body` arguments are JSON strings.
+
+Verification commands from the repository root:
+
+```sh
+cargo test -p primer-wasm
+cargo fmt -p primer-wasm --check
+RUSTFLAGS='-C link-arg=--allow-undefined' cargo build --target wasm32-wasip1 --release
+go -C tools/wasm-debug test -race ./...
+```
+
+The artifact smoke test exercises the actual exported tool registry, dispatcher,
+TV authorization header, read-only routes, paging and credential/error redaction
+against a local HTTP fixture. It requires the built WASM and does not skip when
+it is missing. No live credentials or production device changes are needed.
 
 ## Native Clerk OAuth
 

@@ -20,6 +20,10 @@ rustup target add wasm32-wasip1
 
 CI builds all WASM plugins and retains tests for the retired Primer companion.
 Primer gates: `cargo test -p primer-wasm`, `cargo fmt -p primer-wasm --check`.
+After building the WASM artifacts with `RUSTFLAGS='-C link-arg=--allow-undefined'`,
+run `go -C tools/wasm-debug test -race ./...` for real exported device discovery,
+HTTP routing/authentication, pagination and credential-redaction regression tests.
+The smoke test requires the built Primer artifact and fails if it is missing.
 Primer uses native Switchboard OAuth, documented in `plugins/primer/README.md`.
 Do not configure a companion or persist browser session JWTs for Tasks access.
 Historical companion gates remain in `tools/primer-auth`: `go test -race ./...`,
