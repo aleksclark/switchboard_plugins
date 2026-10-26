@@ -1,3 +1,4 @@
+use crate::reading::{self, Body};
 use switchboard_guest_sdk::ToolDefinition;
 
 fn tool(
@@ -28,9 +29,73 @@ fn list_parameters() -> Vec<(&'static str, &'static str)> {
     ]
 }
 
+fn reading_tool(route: &reading::Route) -> ToolDefinition {
+    let mut parameters = Vec::new();
+    let mut required = Vec::new();
+    for name in reading::path_params(route.path) {
+        parameters.push((name, reading::param_description(name)));
+        required.push(name);
+    }
+    for name in route.query {
+        parameters.push((name, reading::param_description(name)));
+    }
+    if route.method == "DELETE" && route.query.contains(&"version") {
+        required.push("version");
+    }
+    if let Body::Json(description) = route.body {
+        parameters.push(("body", description));
+        required.push("body");
+    }
+    if route.idempotent {
+        parameters.push((
+            "idempotency_key",
+            "Optional. Defaults to a key derived from this exact request, so retries are safe; supply a new key to deliberately repeat an identical request",
+        ));
+    }
+    tool(route.name, route.description, &parameters, &required)
+}
+
+fn reading_tools() -> Vec<ToolDefinition> {
+    let mut tools: Vec<ToolDefinition> = reading::ROUTES.iter().map(reading_tool).collect();
+    tools.push(tool(
+        reading::IMPORT_TOOL,
+        reading::IMPORT_DESCRIPTION,
+        &[
+            ("work_id", reading::param_description("work_id")),
+            ("edition_id", "Source edition UUID that receives the EPUB"),
+            ("source_url", "HTTPS URL that downloads the EPUB file"),
+            (
+                "rights_source",
+                "Where the EPUB came from, e.g. Standard Ebooks or Project Gutenberg",
+            ),
+            (
+                "rights_license",
+                "License or permission for family use, e.g. Public domain (US)",
+            ),
+            (
+                "rights_acknowledged",
+                "true only when the parent confirms the family may use this copy",
+            ),
+            (
+                "idempotency_key",
+                "Optional. Defaults to a key derived from the EPUB digest and target edition",
+            ),
+        ],
+        &[
+            "work_id",
+            "edition_id",
+            "source_url",
+            "rights_source",
+            "rights_license",
+            "rights_acknowledged",
+        ],
+    ));
+    tools
+}
+
 pub fn tool_definitions() -> Vec<ToolDefinition> {
     let list = list_parameters();
-    vec![
+    let mut tools = vec![
         tool("primer_list_media_items", "List Primer TV catalog media and video records. Start here to discover TV content and content ingest state.", &list, &[]),
         tool("primer_get_media_item", "Get one Primer TV catalog media item by UUID. Use after primer_list_media_items.", &[("id", "Media item UUID")], &["id"]),
         tool("primer_create_media_item", "Create a curated Primer TV media item.", &[("body", "JSON media item create body")], &["body"]),
@@ -71,5 +136,7 @@ pub fn tool_definitions() -> Vec<ToolDefinition> {
         tool("primer_retry_occurrence", "Retry a Primer task occurrence or requirement attempt.", &[("id", "Occurrence UUID"), ("requirement_id", "Optional requirement UUID"), ("attempt_id", "Optional attempt UUID")], &["id"]),
         tool("primer_skip_occurrence", "Skip a Primer task occurrence.", &[("id", "Occurrence UUID")], &["id"]),
         tool("primer_cancel_occurrence", "Cancel a Primer task occurrence.", &[("id", "Occurrence UUID")], &["id"]),
-    ]
+    ];
+    tools.extend(reading_tools());
+    tools
 }

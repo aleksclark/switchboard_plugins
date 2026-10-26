@@ -1,4 +1,5 @@
 mod devices;
+mod reading;
 mod tools;
 
 use serde_json::Value;
@@ -13,6 +14,7 @@ struct Config {
     tv_admin_key: String,
     tasks_base_url: String,
     tasks_api_key: String,
+    lms_base_url: String,
 }
 
 #[no_mangle]
@@ -30,7 +32,7 @@ fn plugin_metadata() -> sdk::PluginMetadata {
         name: "primer".into(),
         version: env!("CARGO_PKG_VERSION").into(),
         abi_version: 1,
-        description: "Administer Primer TV, Primer Tasks, and Primer content ingest".into(),
+        description: "Administer Primer TV, Primer Tasks, the Primer reading library and reading plans, and Primer content ingest".into(),
         author: "aleksclark".into(),
         homepage: "https://github.com/aleksclark/switchboard_plugins".into(),
         license: "MIT".into(),
@@ -40,6 +42,7 @@ fn plugin_metadata() -> sdk::PluginMetadata {
             "tv_admin_key".into(),
             "tasks_base_url".into(),
             "tasks_api_key".into(),
+            "lms_base_url".into(),
             "oauth_issuer".into(),
             "oauth_client_id".into(),
             "oauth_scopes".into(),
@@ -50,6 +53,7 @@ fn plugin_metadata() -> sdk::PluginMetadata {
         plain_text_keys: vec![
             "tv_base_url".into(),
             "tasks_base_url".into(),
+            "lms_base_url".into(),
             "oauth_issuer".into(),
             "oauth_client_id".into(),
             "oauth_scopes".into(),
@@ -59,6 +63,7 @@ fn plugin_metadata() -> sdk::PluginMetadata {
         ],
         optional_keys: vec![
             "tasks_api_key".into(),
+            "lms_base_url".into(),
             "oauth_issuer".into(),
             "oauth_client_id".into(),
             "oauth_scopes".into(),
@@ -77,6 +82,10 @@ fn plugin_metadata() -> sdk::PluginMetadata {
                 "tasks_api_key".into(),
                 "Leave blank for native OAuth; otherwise use a Tasks service API key".into(),
             ),
+            (
+                "lms_base_url".into(),
+                "https://api.primerlms.com/api/v1".into(),
+            ),
             ("oauth_issuer".into(), "https://clerk.primerlms.com".into()),
             (
                 "oauth_client_id".into(),
@@ -84,7 +93,8 @@ fn plugin_metadata() -> sdk::PluginMetadata {
             ),
             (
                 "oauth_scopes".into(),
-                "openid profile email offline_access tasks:read tasks:write".into(),
+                "openid profile email offline_access tasks:read tasks:write reading:read reading:write"
+                    .into(),
             ),
             ("oauth_token_key".into(), "tasks_api_key".into()),
             (
@@ -124,11 +134,19 @@ pub extern "C" fn configure(ptr_size: u64) -> u64 {
     if tasks_api_key.is_empty() {
         return sdk::leaked_string("primer: tasks_api_key is required");
     }
+    let lms_base_url = credential(&credentials, "lms_base_url");
+    if !lms_base_url.is_empty()
+        && !lms_base_url.starts_with("https://")
+        && !lms_base_url.starts_with("http://")
+    {
+        return sdk::leaked_string("primer: lms_base_url must be an http(s) URL");
+    }
     *CONFIG.lock().unwrap() = Some(Config {
         tv_base_url: tv_base_url.trim_end_matches('/').into(),
         tv_admin_key,
         tasks_base_url: tasks_base_url.trim_end_matches('/').into(),
         tasks_api_key,
+        lms_base_url: lms_base_url.trim_end_matches('/').into(),
     });
     0
 }
@@ -157,6 +175,7 @@ pub extern "C" fn healthy() -> i32 {
 enum Service {
     Tv,
     Tasks,
+    Lms,
 }
 
 fn dispatch(name: &str, args: HashMap<String, Value>) -> sdk::ToolResult {
@@ -258,7 +277,11 @@ fn dispatch(name: &str, args: HashMap<String, Value>) -> sdk::ToolResult {
         "primer_cancel_occurrence" => {
             id_suffix_request(Service::Tasks, "POST", "/occurrences", "/cancel", &args)
         }
-        _ => sdk::err_result(&format!("unknown tool: {name}")),
+        reading::IMPORT_TOOL => import_epub(&args),
+        _ => match reading::find(name) {
+            Some(route) => reading_request(route, &args),
+            None => sdk::err_result(&format!("unknown tool: {name}")),
+        },
     }
 }
 
@@ -391,7 +414,7 @@ fn query_path(path: &str, args: &HashMap<String, Value>, keys: &[&str]) -> Strin
                     "start_index" => "startIndex",
                     "requirement_id" => "requirementId",
                     "attempt_id" => "attemptId",
-                    _ => key,
+                    _ => reading::api_query_key(key),
                 };
                 Some(format!("{api_key}={}", percent_encode(&value)))
             }
@@ -445,7 +468,10 @@ fn occurrence_retry(args: &HashMap<String, Value>) -> sdk::ToolResult {
 }
 
 fn require_arg(args: &HashMap<String, Value>, key: &str) -> Result<String, sdk::ToolResult> {
-    let value = sdk::arg_str(args, key);
+    let value = match args.get(key) {
+        Some(Value::Number(number)) => number.to_string(),
+        _ => sdk::arg_str(args, key),
+    };
     if value.is_empty() {
         Err(sdk::err_result(&format!("{key} is required")))
     } else {
@@ -468,7 +494,22 @@ fn request_result(service: Service, method: &str, path: &str, body: String) -> s
     }
 }
 
+enum Payload {
+    Text(String),
+    Bytes(Vec<u8>),
+}
+
 fn request(service: Service, method: &str, path: &str, body: String) -> Result<String, String> {
+    request_with(service, method, path, Payload::Text(body), Vec::new())
+}
+
+fn request_with(
+    service: Service,
+    method: &str,
+    path: &str,
+    body: Payload,
+    extra_headers: Vec<(&str, String)>,
+) -> Result<String, String> {
     let guard = CONFIG
         .lock()
         .map_err(|_| "primer configuration lock failed".to_string())?;
@@ -486,17 +527,37 @@ fn request(service: Service, method: &str, path: &str, body: String) -> Result<S
             "Authorization",
             format!("Bearer {}", config.tasks_api_key),
         ),
+        Service::Lms => {
+            if config.lms_base_url.is_empty() {
+                return Err("primer: lms_base_url is not configured; set it to the LMS API base including /api/v1".into());
+            }
+            (
+                &config.lms_base_url,
+                "Authorization",
+                format!("Bearer {}", config.tasks_api_key),
+            )
+        }
     };
-    let response = sdk::host_http_request(&sdk::HttpRequest {
-        method: method.into(),
-        url: format!("{base_url}{path}"),
-        headers: HashMap::from([
-            ("Content-Type".into(), "application/json".into()),
-            (auth_header.into(), auth_value),
-        ]),
-        body,
-        body_base64: String::new(),
-    })?;
+    let mut headers = HashMap::from([
+        ("Content-Type".to_string(), "application/json".to_string()),
+        (auth_header.to_string(), auth_value),
+    ]);
+    for (key, value) in extra_headers {
+        headers.insert(key.into(), value);
+    }
+    let url = format!("{base_url}{path}");
+    let request = match body {
+        Payload::Text(body) => sdk::HttpRequest {
+            method: method.into(),
+            url,
+            headers,
+            body,
+            body_base64: String::new(),
+        },
+        Payload::Bytes(bytes) => sdk::HttpRequest::with_body_bytes(method, &url, headers, &bytes),
+    };
+    drop(guard);
+    let response = sdk::host_http_request(&request)?;
     if response.status >= 400 {
         return Err(format!(
             "Primer API error ({}): {}",
@@ -507,6 +568,118 @@ fn request(service: Service, method: &str, path: &str, body: String) -> Result<S
         Ok(r#"{"status":"success"}"#.into())
     } else {
         Ok(response.body)
+    }
+}
+
+fn reading_request(route: &reading::Route, args: &HashMap<String, Value>) -> sdk::ToolResult {
+    let mut path = String::new();
+    for part in route.path.split('/').skip(1) {
+        path.push('/');
+        match part
+            .strip_prefix('{')
+            .and_then(|part| part.strip_suffix('}'))
+        {
+            Some(name) => match require_arg(args, name) {
+                Ok(value) => path.push_str(&percent_encode(&value)),
+                Err(error) => return error,
+            },
+            None => path.push_str(part),
+        }
+    }
+    if route.method == "DELETE" && route.query.contains(&"version") {
+        if let Err(error) = require_arg(args, "version") {
+            return error;
+        }
+    }
+    let body = match route.body {
+        reading::Body::None => String::new(),
+        reading::Body::Json(_) => match json_arg(args, "body") {
+            Ok(value) => value,
+            Err(error) => return error,
+        },
+    };
+    let mut headers = Vec::new();
+    if route.idempotent {
+        match reading::idempotency_key(args, route.name, &path, &body) {
+            Ok(key) => headers.push(("Idempotency-Key", key)),
+            Err(error) => return error,
+        }
+    }
+    let full_path = query_path(&path, args, route.query);
+    match request_with(
+        Service::Lms,
+        route.method,
+        &full_path,
+        Payload::Text(body),
+        headers,
+    ) {
+        Ok(value) => sdk::raw_result(value),
+        Err(error) => sdk::err_result(&error),
+    }
+}
+
+fn import_epub(args: &HashMap<String, Value>) -> sdk::ToolResult {
+    let import = match reading::epub_import(args) {
+        Ok(value) => value,
+        Err(error) => return sdk::err_result(&error),
+    };
+    let download = sdk::host_http_request_raw_body(&sdk::HttpRequest {
+        method: "GET".into(),
+        url: import.source_url.clone(),
+        headers: HashMap::from([
+            (
+                "Accept".into(),
+                "application/epub+zip, application/octet-stream".into(),
+            ),
+            ("X-Host-Timeout-Seconds".into(), "120".into()),
+        ]),
+        body: String::new(),
+        body_base64: String::new(),
+    });
+    let response = match download {
+        Ok(response) => response,
+        Err(_) => return sdk::err_result("EPUB download failed; check source_url"),
+    };
+    if !(200..300).contains(&response.status) {
+        return sdk::err_result(&format!(
+            "EPUB download failed with HTTP {}",
+            response.status
+        ));
+    }
+    let bytes = match response.body_bytes() {
+        Ok(bytes) => bytes,
+        Err(_) => return sdk::err_result("EPUB download could not be decoded"),
+    };
+    if let Err(error) = reading::validate_epub(&bytes) {
+        return sdk::err_result(&error);
+    }
+    let digest = reading::sha256_hex(&bytes);
+    let key = match reading::idempotency_key(args, reading::IMPORT_TOOL, &import.path, &digest) {
+        Ok(key) => key,
+        Err(error) => return error,
+    };
+    let headers = vec![
+        ("Content-Type", "application/epub+zip".to_string()),
+        ("Idempotency-Key", key),
+        ("X-Content-SHA256", digest),
+        ("X-Content-Length", bytes.len().to_string()),
+        ("X-Rights-Source", import.rights_source),
+        ("X-Rights-License", import.rights_license),
+        (
+            "X-Rights-Acknowledged",
+            import.rights_acknowledged.to_string(),
+        ),
+        ("X-Host-Timeout-Seconds", "120".to_string()),
+    ];
+    match request_with(
+        Service::Lms,
+        "POST",
+        &import.path,
+        Payload::Bytes(bytes),
+        headers,
+    ) {
+        Ok(value) => sdk::raw_result(value),
+        Err(error) => sdk::err_result(&error),
     }
 }
 
@@ -558,6 +731,12 @@ mod tests {
         }
         assert!(meta.optional_keys.contains(&"tasks_api_key".to_string()));
         assert_eq!(meta.placeholders["oauth_token_key"], "tasks_api_key");
+        for key in ["lms_base_url"] {
+            assert!(meta.credential_keys.contains(&key.to_string()));
+            assert!(meta.plain_text_keys.contains(&key.to_string()));
+            assert!(meta.optional_keys.contains(&key.to_string()));
+        }
+        assert!(meta.placeholders["oauth_scopes"].contains("reading:read reading:write"));
         assert_eq!(meta.version, env!("CARGO_PKG_VERSION"));
     }
 
@@ -618,6 +797,44 @@ mod tests {
         );
         let args = HashMap::from([("limit".into(), serde_json::json!("2"))]);
         assert_eq!(query_path("/tasks", &args, &["limit"]), "/tasks?limit=2");
+    }
+
+    #[test]
+    fn reading_tools_expose_required_arguments() {
+        let definitions = tools::tool_definitions();
+        let find = |name: &str| {
+            definitions
+                .iter()
+                .find(|tool| tool.name == name)
+                .unwrap_or_else(|| panic!("{name} must be registered"))
+        };
+        let create = find("primer_create_reading_work");
+        assert_eq!(create.required, vec!["body"]);
+        assert!(create.parameters.contains_key("idempotency_key"));
+        let schedule = find("primer_schedule_reading_segment");
+        assert_eq!(schedule.required, vec!["id", "segment_id", "body"]);
+        assert!(!schedule.parameters.contains_key("idempotency_key"));
+        let delete = find("primer_delete_reading_plan");
+        assert_eq!(delete.required, vec!["id", "version"]);
+        let plans = find("primer_list_reading_plans");
+        assert!(plans.required.is_empty());
+        assert!(plans.parameters.contains_key("student_id"));
+        let import = find("primer_import_reading_epub");
+        for key in [
+            "work_id",
+            "edition_id",
+            "source_url",
+            "rights_source",
+            "rights_license",
+            "rights_acknowledged",
+        ] {
+            assert!(import.required.contains(&key.to_string()), "{key}");
+        }
+        let args = HashMap::from([("student_id".into(), serde_json::json!("s 1"))]);
+        assert_eq!(
+            query_path("/reading/plans", &args, &["student_id", "limit"]),
+            "/reading/plans?studentId=s%201"
+        );
     }
 
     #[test]
