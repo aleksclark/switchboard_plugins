@@ -12,7 +12,7 @@ Community WASM plugins for [Switchboard](https://github.com/daltoniam/switchboar
 | [lidarr](plugins/lidarr/) | 27 | Lidarr music manager — artists, albums, calendar, queue, history, quality/metadata profiles |
 | [readarr](plugins/readarr/) | 29 | Readarr book manager — authors, books, calendar, queue, history, quality/metadata profiles |
 | [prowlarr](plugins/prowlarr/) | 25 | Prowlarr indexer manager — indexers, search, applications, download clients |
-| [primer](plugins/primer/) | 39 | Primer TV catalog, Tasks assignments, and content ingest |
+| [primer](plugins/primer/) | 101 | Primer TV catalog, Tasks assignments, reading library and plans, and content ingest |
 
 ## Installing
 
@@ -36,7 +36,8 @@ consent or reauthorization. No companion process, CDP, or open browser is needed
 for tool calls.
 
 Primer TV and content ingest use `tv_base_url` and `tv_admin_key`. Tasks connects
-directly to its production API. OAuth setup fields appear in the plugin form;
+directly to its production API. Reading library and plan tools reuse the Tasks
+OAuth token against `lms_base_url` and need the `reading:read`/`reading:write` scopes. OAuth setup fields appear in the plugin form;
 leave `tasks_api_key` blank in OAuth mode because the host supplies the access
 token. A separately issued Tasks service key remains an alternative when the
 server supports it. The former browser-auth companion is retired.

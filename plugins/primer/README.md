@@ -1,9 +1,58 @@
 # Primer
 
-40 tools for Primer TV catalog/programming, Tasks assignments and verification,
-and content ingest manifests. The plugin uses Switchboard's HTTP host capability.
+101 tools for Primer TV catalog/programming, Tasks assignments and verification,
+the LMS reading library and reading plans, and content ingest manifests. The
+plugin uses Switchboard's HTTP host capability.
 Content ingest tools manage the TV-side manifest and catalog; they do not run the
 batch acquisition CLI.
+
+## Reading library and reading plans
+
+61 tools manage the LMS reading library and reading plans with the same Clerk
+OAuth access token used for Tasks. Set `lms_base_url` to the LMS API base
+including `/api/v1` (production: `https://api.primerlms.com/api/v1`). Without it
+these tools report that the LMS is not configured and make no request.
+
+Start with `primer_list_reading_works` for books and `primer_list_reading_plans`
+for plans. Typical workflow:
+
+1. **Library:** `primer_create_reading_work`, `primer_create_reading_edition`
+   (`kind: "source"` for the EPUB, `kind: "print"` for the student's book), then
+   `primer_import_reading_epub` from an HTTPS download URL. Poll
+   `primer_get_reading_import`, review `primer_get_reading_import_draft`, and
+   publish with `primer_publish_reading_revision`. Optional print page maps use
+   `primer_create_reading_map` and `primer_publish_reading_map`.
+2. **Plan:** find the LMS student with `primer_list_lms_students` (LMS IDs differ
+   from Tasks IDs), then `primer_create_quick_reading_plan`, or
+   `primer_create_reading_plan` for explicit segments and outcomes.
+   `primer_schedule_reading_segment` moves a segment to another day.
+3. **Questions:** `primer_prepare_reading_segment`, then
+   `primer_generate_reading_questions` or `primer_generate_reading_question_batch`
+   (these can bill the question provider), poll `primer_get_reading_question_job`,
+   and save the parent's choices with `primer_save_reading_question_draft`.
+4. **Assign:** link the LMS and Tasks students once with
+   `primer_link_reading_tasks_student` and `primer_finalize_reading_tasks_student_link`,
+   then `primer_review_reading_assignment` and `primer_publish_reading_assignment`
+   with the returned `reviewedHash`. Track it with `primer_get_reading_assignment`
+   and `primer_get_reading_academic_review`.
+
+Plans also support adjustments, reinforcements, reading confirmations and
+deletion. Structured `body` arguments are JSON strings using the LMS field names
+shown in each tool description; versioned updates need the record's current
+`version`. Create, publish and generation tools send an `Idempotency-Key`. By
+default it is derived from the exact request, so retrying after a timeout replays
+the original result instead of creating a duplicate; pass `idempotency_key` to
+deliberately repeat an identical request.
+
+`primer_import_reading_epub` downloads the file through the Switchboard host
+without Primer credentials, rejects non-ZIP or possibly truncated (10 MiB host
+limit) downloads, computes SHA-256, and uploads it with the rights source,
+license and acknowledgement. Larger EPUBs must be uploaded in the LMS.
+
+The LMS accepts these tokens only when `LMS_OAUTH_CLIENT_IDS` admits the client
+and the token carries `reading:read` (lookups and previews) or `reading:write`
+(changes). Your Clerk user must be linked to an LMS parent/admin educator. Worksheet
+PDFs, source downloads and table-of-contents image review stay in the LMS UI.
 
 ## Discover TV devices for viewing tasks
 
@@ -77,9 +126,10 @@ initial consent; no companion or browser automation is involved in requests.
 | `tv_admin_key` | TV administrator API key, separate from Tasks credentials |
 | `tasks_base_url` | `https://api.primerlms.com/tasks/api` |
 | `tasks_api_key` | Leave blank for OAuth; supplied to the plugin by Switchboard |
+| `lms_base_url` | `https://api.primerlms.com/api/v1` for reading library and plan tools |
 | `oauth_issuer` | `https://clerk.primerlms.com` |
 | `oauth_client_id` | The public Clerk OAuth application's client ID |
-| `oauth_scopes` | `openid profile email offline_access tasks:read tasks:write` |
+| `oauth_scopes` | `openid profile email offline_access tasks:read tasks:write reading:read reading:write` |
 | `oauth_token_key` | `tasks_api_key` |
 | `oauth_subject` | Your exact Clerk `user_...` identifier |
 | `oauth_email` | Your expected Clerk account's primary email |
@@ -118,7 +168,9 @@ optional to support host-managed OAuth.
 
 - **No Connect OAuth button:** save a nonempty `oauth_issuer`; ensure the host has native WASM OAuth support.
 - **Authorization required:** finish consent in the same browser that started it. Check the registered callback and exact expected identity.
-- **403 scope denied:** reconnect requesting `tasks:read` and `tasks:write`; an existing identity-only grant cannot be silently expanded.
+- **403 scope denied:** reconnect requesting `tasks:read` and `tasks:write` (plus `reading:read` and `reading:write` for reading tools); an existing grant cannot be silently expanded. The scopes must also be assigned to the Clerk OAuth application, or Clerk rejects the request with `invalid_scope`.
+- **LMS 401 delegated OAuth credential required:** the deployed LMS does not admit this client yet (`LMS_OAUTH_CLIENT_IDS`), or the token was not an OAuth access token.
+- **LMS 403 parent access denied:** link your Clerk user to an LMS parent/admin educator with `lms-parent-link`.
 - **401 parent session required:** the deployed Tasks API does not yet accept OAuth access tokens. Deploy the delegated boundary; do not substitute an ID token or fabricate a session ID.
 - **TV authorization failure:** check the separate TV key/base URL. OAuth for Tasks does not grant TV access.
 - **Refresh persistence error:** repair host configuration storage before restarting; a rotated refresh token may only exist in host memory until saving succeeds.
