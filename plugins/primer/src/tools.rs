@@ -136,6 +136,7 @@ pub fn tool_definitions() -> Vec<ToolDefinition> {
         tool("primer_retry_occurrence", "Retry a Primer task occurrence or requirement attempt.", &[("id", "Occurrence UUID"), ("requirement_id", "Optional requirement UUID"), ("attempt_id", "Optional attempt UUID")], &["id"]),
         tool("primer_skip_occurrence", "Skip a Primer task occurrence.", &[("id", "Occurrence UUID")], &["id"]),
         tool("primer_cancel_occurrence", "Cancel a Primer task occurrence.", &[("id", "Occurrence UUID")], &["id"]),
+        tool("primer_confirm_reading_tasks_link", "Confirm, in Tasks, an LMS-to-Tasks student link started with primer_link_reading_tasks_student. Pass its requestId and one-time secret before it expires, then finish with primer_finalize_reading_tasks_student_link. Requires tasks:write and household admin access.", &[("body", "JSON {\"requestId\",\"secret\"} from primer_link_reading_tasks_student")], &["body"]),
     ];
     tools.extend(reading_tools());
     tools

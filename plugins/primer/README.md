@@ -1,6 +1,6 @@
 # Primer
 
-101 tools for Primer TV catalog/programming, Tasks assignments and verification,
+102 tools for Primer TV catalog/programming, Tasks assignments and verification,
 the LMS reading library and reading plans, and content ingest manifests. The
 plugin uses Switchboard's HTTP host capability.
 Content ingest tools manage the TV-side manifest and catalog; they do not run the
@@ -30,8 +30,9 @@ for plans. Typical workflow:
    `primer_generate_reading_questions` or `primer_generate_reading_question_batch`
    (these can bill the question provider), poll `primer_get_reading_question_job`,
    and save the parent's choices with `primer_save_reading_question_draft`.
-4. **Assign:** link the LMS and Tasks students once with
-   `primer_link_reading_tasks_student` and `primer_finalize_reading_tasks_student_link`,
+4. **Assign:** link the LMS and Tasks students once: `primer_link_reading_tasks_student`
+   returns a one-time code, `primer_confirm_reading_tasks_link` confirms it in Tasks
+   (needs `tasks:write`), and `primer_finalize_reading_tasks_student_link` completes it;
    then `primer_review_reading_assignment` and `primer_publish_reading_assignment`
    with the returned `reviewedHash`. Track it with `primer_get_reading_assignment`
    and `primer_get_reading_academic_review`.

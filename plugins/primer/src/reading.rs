@@ -99,7 +99,7 @@ pub(crate) const ROUTES: &[Route] = &[
     route("primer_get_reading_assignment", "Get a published reading assignment and its Tasks delivery status.", "GET", "/reading/assignments/{id}", NONE, Body::None, false),
     route("primer_get_reading_academic_review", "Get the parent reviews synced back from Tasks for a reading assignment.", "GET", "/reading/assignments/{id}/academic-review", NONE, Body::None, false),
     route("primer_cancel_reading_assignment", "Cancel a published reading assignment.", "POST", "/reading/assignments/{id}/cancel", NONE, Body::None, false),
-    route("primer_link_reading_tasks_student", "Start linking an LMS student to a Tasks student so reading assignments can be delivered. Returns a request to finalize.", "PUT", "/reading/students/{student_id}/tasks-link", NONE, Body::Json("JSON {\"familyId\",\"tasksStudentId\",\"lmsParentId\"}"), false),
+    route("primer_link_reading_tasks_student", "Start linking an LMS student to a Tasks student so reading assignments can be delivered. Returns a requestId and one-time secret: confirm them with primer_confirm_reading_tasks_link, then call primer_finalize_reading_tasks_student_link.", "PUT", "/reading/students/{student_id}/tasks-link", NONE, Body::Json("JSON {\"familyId\",\"tasksStudentId\",\"lmsParentId\"}"), false),
     route("primer_finalize_reading_tasks_student_link", "Finalize an LMS-to-Tasks student link.", "POST", "/reading/students/{student_id}/tasks-link/finalize", NONE, Body::Json("JSON {\"requestId\"}"), false),
     route("primer_revoke_reading_tasks_student_link", "Revoke an LMS-to-Tasks student link.", "POST", "/reading/students/{student_id}/tasks-link/revoke", NONE, Body::None, false),
 ];

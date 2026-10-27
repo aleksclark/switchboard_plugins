@@ -277,6 +277,9 @@ fn dispatch(name: &str, args: HashMap<String, Value>) -> sdk::ToolResult {
         "primer_cancel_occurrence" => {
             id_suffix_request(Service::Tasks, "POST", "/occurrences", "/cancel", &args)
         }
+        "primer_confirm_reading_tasks_link" => {
+            body_request(Service::Tasks, "POST", "/reading/links/confirm", &args)
+        }
         reading::IMPORT_TOOL => import_epub(&args),
         _ => match reading::find(name) {
             Some(route) => reading_request(route, &args),

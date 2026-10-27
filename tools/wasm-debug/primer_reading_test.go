@@ -246,3 +246,30 @@ func TestPrimerReadingRequiresLMSConfiguration(t *testing.T) {
 		t.Fatal("unconfigured LMS request reached the network")
 	}
 }
+
+func TestPrimerConfirmReadingLinkUsesTasksOAuth(t *testing.T) {
+	var got recordedRequest
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		body, _ := io.ReadAll(request.Body)
+		got = recordedRequest{request.Method, request.URL.Path, request.URL.RawQuery, request.Header.Clone(), body}
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{"state":"linked"}`))
+	}))
+	defer server.Close()
+	ctx := context.Background()
+	module := loadPrimer(t, ctx, map[string]string{"tv_base_url": server.URL + "/tv", "tv_admin_key": "fixture-tv-key", "tasks_base_url": server.URL + "/tasks/api", "tasks_api_key": "fixture-oauth-token", "lms_base_url": server.URL + "/api/v1"})
+	result := executePrimer(t, ctx, module, "primer_confirm_reading_tasks_link", map[string]any{"body": `{"requestId":"req-1","secret":"one-time"}`})
+	if result.IsError || !strings.Contains(result.Data, "linked") {
+		t.Fatalf("confirmation failed: %+v", result)
+	}
+	if got.Method != http.MethodPost || got.Path != "/tasks/api/reading/links/confirm" || got.Header.Get("Authorization") != "Bearer fixture-oauth-token" || got.Header.Get("X-Admin-Key") != "" {
+		t.Fatalf("unexpected request: %s %s", got.Method, got.Path)
+	}
+	var body map[string]string
+	if err := json.Unmarshal(got.Body, &body); err != nil || body["requestId"] != "req-1" || body["secret"] != "one-time" {
+		t.Fatalf("body not forwarded: %s", got.Body)
+	}
+	if missing := executePrimer(t, ctx, module, "primer_confirm_reading_tasks_link", map[string]any{}); !missing.IsError {
+		t.Fatal("missing body accepted")
+	}
+}
