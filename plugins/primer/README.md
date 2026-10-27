@@ -1,6 +1,6 @@
 # Primer
 
-102 tools for Primer TV catalog/programming, Tasks assignments and verification,
+103 tools for Primer TV catalog/programming, Tasks assignments and verification,
 the LMS reading library and reading plans, and content ingest manifests. The
 plugin uses Switchboard's HTTP host capability.
 Content ingest tools manage the TV-side manifest and catalog; they do not run the
@@ -21,7 +21,7 @@ for plans. Typical workflow:
    `primer_import_reading_epub` from an HTTPS download URL. Poll
    `primer_get_reading_import`, review `primer_get_reading_import_draft`, and
    publish with `primer_publish_reading_revision`. Optional print page maps use
-   `primer_create_reading_map` and `primer_publish_reading_map`.
+   `primer_create_reading_map` and `primer_publish_reading_map`; remove a wrong map with `primer_delete_reading_map`.
 2. **Plan:** find the LMS student with `primer_list_lms_students` (LMS IDs differ
    from Tasks IDs), then `primer_create_quick_reading_plan`, or
    `primer_create_reading_plan` for explicit segments and outcomes.

@@ -12,7 +12,7 @@ Community WASM plugins for [Switchboard](https://github.com/daltoniam/switchboar
 | [lidarr](plugins/lidarr/) | 27 | Lidarr music manager — artists, albums, calendar, queue, history, quality/metadata profiles |
 | [readarr](plugins/readarr/) | 29 | Readarr book manager — authors, books, calendar, queue, history, quality/metadata profiles |
 | [prowlarr](plugins/prowlarr/) | 25 | Prowlarr indexer manager — indexers, search, applications, download clients |
-| [primer](plugins/primer/) | 102 | Primer TV catalog, Tasks assignments, reading library and plans, and content ingest |
+| [primer](plugins/primer/) | 103 | Primer TV catalog, Tasks assignments, reading library and plans, and content ingest |
 
 ## Installing
 
