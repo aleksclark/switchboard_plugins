@@ -34,7 +34,7 @@ jobs:
         run: |
           TAG="v$(date -u +%Y%m%d.%H%M%S)"
           # Semver for Cargo.toml: YYYY.MDD.HHMM (all segments fit semver limits)
-          SEMVER="$(date -u +%-Y.%-m%d.%-H%M)"
+          SEMVER="$(date -u +%-Y.%-m%d).$((10#$(date -u +%H%M)))"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "semver=$SEMVER" >> "$GITHUB_OUTPUT"
 
