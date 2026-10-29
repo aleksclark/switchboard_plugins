@@ -32,7 +32,7 @@ fn plugin_metadata() -> sdk::PluginMetadata {
         name: "primer".into(),
         version: env!("CARGO_PKG_VERSION").into(),
         abi_version: 1,
-        description: "Administer Primer TV, Primer Tasks, the Primer reading library and reading plans, and Primer content ingest".into(),
+        description: "Administer Primer TV, Primer Tasks, the Primer reading library and reading plans, workstation lessons and student work, and Primer content ingest".into(),
         author: "aleksclark".into(),
         homepage: "https://github.com/aleksclark/switchboard_plugins".into(),
         license: "MIT".into(),

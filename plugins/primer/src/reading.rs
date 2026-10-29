@@ -103,6 +103,19 @@ pub(crate) const ROUTES: &[Route] = &[
     route("primer_link_reading_tasks_student", "Start linking an LMS student to a Tasks student so reading assignments can be delivered. Returns a requestId and one-time secret: confirm them with primer_confirm_reading_tasks_link, then call primer_finalize_reading_tasks_student_link.", "PUT", "/reading/students/{student_id}/tasks-link", NONE, Body::Json("JSON {\"familyId\",\"tasksStudentId\",\"lmsParentId\"}"), false),
     route("primer_finalize_reading_tasks_student_link", "Finalize an LMS-to-Tasks student link.", "POST", "/reading/students/{student_id}/tasks-link/finalize", NONE, Body::Json("JSON {\"requestId\"}"), false),
     route("primer_revoke_reading_tasks_student_link", "Revoke an LMS-to-Tasks student link.", "POST", "/reading/students/{student_id}/tasks-link/revoke", NONE, Body::None, false),
+    route("primer_list_learning_activities", "List workstation learning activities (terminal and typing lessons) loaded into the LMS. Filter with slug:<slug>. Use primer_list_learning_activity_revisions for the revision ID to assign.", "GET", "/learning-activities", &["q", "limit", "offset", "filter"], Body::None, false),
+    route("primer_list_learning_activity_revisions", "List an activity's published revisions, newest last. Assign the revision ID with primer_create_learning_assignment.", "GET", "/learning-activities/{id}/revisions", NONE, Body::None, false),
+    route("primer_plan_curriculum_import", "Validate a curriculum import bundle (standards, workstation activities and a course) and return a diff plus bundleDigest without changing anything that students see. Build the bundle from the Primer repo with: python3 content/technology/basic_linux/load.py --course-dir content/technology/<course> --bundle-out -. Follow with primer_apply_curriculum_import.", "POST", "/curriculum/import/plan", NONE, Body::Json("Import bundle JSON {\"schemaVersion\",\"sourceLabel\",\"version\",\"standards\":[],\"activities\":[],\"course\"}"), false),
+    route("primer_apply_curriculum_import", "Apply a planned curriculum import. Publishes standards, activities and the course; never assigns or enrolls students. Pass the same bundle and the bundleDigest from primer_plan_curriculum_import.", "POST", "/curriculum/import/apply", NONE, Body::Json("JSON {\"bundle\":<bundle from primer_plan_curriculum_import>,\"bundleDigest\",\"sourceLabel\"}"), false),
+    route("primer_list_student_learning_assignments", "List a student's workstation assignments and their state.", "GET", "/students/{id}/assignments", NONE, Body::None, false),
+    route("primer_create_learning_assignment", "Assign a workstation activity revision to an LMS student. It appears in the student's work queue on the workstation after the next sync.", "POST", "/assignments", NONE, Body::Json("JSON {\"studentId\",\"activityRevisionId\",\"priority\"?,\"reason\"?}"), false),
+    route("primer_cancel_learning_assignment", "Cancel a workstation assignment. Work already done is kept.", "POST", "/assignments/{id}/cancel", NONE, Body::None, false),
+    route("primer_create_workstation_pairing_code", "Create a one-time code that pairs the student workstation to an LMS student. The student types it into the primer app on the workstation. Treat the code as a secret and give it only to the parent.", "POST", "/pairing-codes", NONE, Body::Json("JSON {\"studentId\"}"), false),
+    route("primer_get_student_learning_overview", "Summarize a student's workstation learning: paired devices, open assignments, recent sessions and mastery.", "GET", "/students/{id}/learning-overview", NONE, Body::None, false),
+    route("primer_get_student_activity_log", "Newest-first log of a student's workstation sessions, submitted short answers and each automated review outcome with the feedback the student saw.", "GET", "/students/{id}/activity-log", &["limit"], Body::None, false),
+    route("primer_list_response_reviews", "List a student's short-answer responses by status (submitted, accepted, returned).", "GET", "/response-reviews", &["student_id", "status", "limit"], Body::None, false),
+    route("primer_get_response_review", "Get one short-answer response with its prompt, rubric and review history.", "GET", "/response-reviews/{id}", NONE, Body::None, false),
+    route("primer_decide_response_review", "Accept or return a saved short answer that automatic review could not decide. Only do this when the parent says so.", "POST", "/response-reviews/{id}/decision", NONE, Body::Json("JSON {\"decision\":\"accept|return\",\"reason\"?}"), false),
 ];
 
 pub(crate) const IMPORT_TOOL: &str = "primer_import_reading_epub";
@@ -134,6 +147,7 @@ pub(crate) fn param_description(name: &str) -> &'static str {
         "job_id" => "Question job UUID from primer_list_reading_question_jobs",
         "student_id" => "LMS student UUID from primer_list_lms_students",
         "limit" => "Maximum records to return",
+        "status" => "Response status: submitted, accepted or returned",
         "offset" => "Records to skip",
         "q" => "Free-text search query",
         "sort" => "Field to sort by",
@@ -254,6 +268,37 @@ mod tests {
     use super::*;
     use serde_json::json;
 
+    #[test]
+    fn learning_administration_routes_cover_loading_and_review() {
+        let import = find("primer_plan_curriculum_import").expect("plan");
+        assert_eq!(
+            (import.method, import.path),
+            ("POST", "/curriculum/import/plan")
+        );
+        assert!(import.description.contains("--bundle-out"));
+        let apply = find("primer_apply_curriculum_import").expect("apply");
+        assert!(matches!(apply.body, Body::Json(text) if text.contains("bundleDigest")));
+        let pair = find("primer_create_workstation_pairing_code").expect("pairing");
+        assert_eq!((pair.method, pair.path), ("POST", "/pairing-codes"));
+        let log = find("primer_get_student_activity_log").expect("log");
+        assert_eq!(path_params(log.path), vec!["id"]);
+        assert_eq!(log.query, &["limit"]);
+        let reviews = find("primer_list_response_reviews").expect("reviews");
+        assert_eq!(api_query_key(reviews.query[0]), "studentId");
+        for name in [
+            "primer_list_learning_activities",
+            "primer_list_learning_activity_revisions",
+            "primer_create_learning_assignment",
+            "primer_list_student_learning_assignments",
+            "primer_cancel_learning_assignment",
+            "primer_get_student_learning_overview",
+            "primer_get_response_review",
+            "primer_decide_response_review",
+        ] {
+            assert!(find(name).is_some(), "{name}");
+        }
+    }
+
     fn args(pairs: &[(&str, Value)]) -> HashMap<String, Value> {
         pairs
             .iter()
@@ -272,7 +317,21 @@ mod tests {
         for route in ROUTES {
             assert!(route.name.starts_with("primer_"), "{}", route.name);
             assert!(!route.description.is_empty(), "{}", route.name);
-            assert!(route.path.starts_with("/reading/") || route.path.starts_with("/students"));
+            assert!(
+                [
+                    "/reading/",
+                    "/students",
+                    "/learning-activities",
+                    "/curriculum/import/",
+                    "/assignments",
+                    "/pairing-codes",
+                    "/response-reviews"
+                ]
+                .iter()
+                .any(|prefix| route.path.starts_with(prefix)),
+                "{}",
+                route.name
+            );
             assert!(["GET", "POST", "PUT", "DELETE"].contains(&route.method));
             for name in path_params(route.path)
                 .into_iter()
