@@ -43,6 +43,7 @@ const NONE: &[&str] = &[];
 
 pub(crate) const ROUTES: &[Route] = &[
     route("primer_list_lms_students", "List LMS students for reading plans. LMS student IDs differ from Tasks student IDs (primer_list_students); use these for studentId in reading plans and for primer_link_reading_tasks_student.", "GET", "/students", &["limit", "offset", "q", "sort", "dir", "filter"], Body::None, false),
+    route("primer_create_lms_student", "Add a student to the LMS. Check primer_list_lms_students first: repeating the call creates another student. Use the returned id for reading plans, workstation assignments and primer_create_workstation_pairing_code. Only do this when the parent asks.", "POST", "/students", NONE, Body::Json("JSON {\"firstName\",\"lastName\",\"gradeLevel\"?: 0-12,\"notes\"?}"), false),
     route("primer_get_lms_student", "Get one LMS student by UUID.", "GET", "/students/{id}", NONE, Body::None, false),
     route("primer_get_reading_capabilities", "Show which Primer reading library features are enabled: catalog writes, EPUB import, publication, print page mapping and question generation.", "GET", "/reading/capabilities", NONE, Body::None, false),
     route("primer_list_reading_works", "Search the Primer reading library. Start here for books: a work has editions (print or source), EPUB imports become revisions, and a published revision is what reading plans use. Returns work IDs for the other reading tools.", "GET", "/reading/works", &["q", "limit", "offset"], Body::None, false),
@@ -286,6 +287,10 @@ mod tests {
         assert!(matches!(apply.body, Body::Json(text) if text.contains("bundleDigest")));
         let pair = find("primer_create_workstation_pairing_code").expect("pairing");
         assert_eq!((pair.method, pair.path), ("POST", "/pairing-codes"));
+        let student = find("primer_create_lms_student").expect("create student");
+        assert_eq!((student.method, student.path), ("POST", "/students"));
+        assert!(matches!(student.body, Body::Json(text) if text.contains("firstName")));
+        assert!(!student.idempotent);
         let enroll = find("primer_enroll_student_in_course").expect("enroll");
         assert_eq!(
             (enroll.method, enroll.path),

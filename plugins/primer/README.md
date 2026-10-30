@@ -23,7 +23,8 @@ for plans. Typical workflow:
    publish with `primer_publish_reading_revision`. Optional print page maps use
    `primer_create_reading_map` and `primer_publish_reading_map`; remove a wrong map with `primer_delete_reading_map`.
 2. **Plan:** find the LMS student with `primer_list_lms_students` (LMS IDs differ
-   from Tasks IDs), then `primer_create_quick_reading_plan`, or
+   from Tasks IDs; `primer_create_lms_student` adds a missing one, and repeating it
+   creates a duplicate, so look first), then `primer_create_quick_reading_plan`, or
    `primer_create_reading_plan` for explicit segments and outcomes.
    `primer_schedule_reading_segment` moves a segment to another day.
 3. **Questions:** `primer_prepare_reading_segment`, then
