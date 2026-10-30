@@ -11,13 +11,13 @@
       "license": "MIT",
       "versions": [
         {
-          "version": "2026.1029.259",
+          "version": "2026.1030.1859",
           "abi_min": 1,
           "abi_max": 1,
-          "url": "https://github.com/aleksclark/switchboard_plugins/releases/download/v20261029.025952/homeassistant.wasm",
-          "sha256": "29e393483a2170ea9e795bef32161fc53e093e39c5c0ad7698568c009d419fac",
+          "url": "https://github.com/aleksclark/switchboard_plugins/releases/download/v20261030.185932/homeassistant.wasm",
+          "sha256": "80d73fc527d32e7ec15a1796fbad00a9f2405b3fd88b37177ef5c73c437e3d1c",
           "size": 176440,
-          "released_at": "2026-10-29T03:00:07Z",
+          "released_at": "2026-10-30T18:59:47Z",
           "changelog": "Initial release — 26 tools: states, services, events, history, logbook, config, templates, calendars, intents, automations, scenes, scripts."
         }
       ]
@@ -30,13 +30,13 @@
       "license": "MIT",
       "versions": [
         {
-          "version": "2026.1029.259",
+          "version": "2026.1030.1859",
           "abi_min": 1,
           "abi_max": 1,
-          "url": "https://github.com/aleksclark/switchboard_plugins/releases/download/v20261029.025952/radarr.wasm",
-          "sha256": "1b7b3438839695fc3182b6413c642332375989de24fa1c6cd231959de49d7952",
+          "url": "https://github.com/aleksclark/switchboard_plugins/releases/download/v20261030.185932/radarr.wasm",
+          "sha256": "e400bb36ef2bd498f88f8775091cb2309afd8e4d55b06fa5e2aa9eba0ab54693",
           "size": 159868,
-          "released_at": "2026-10-29T03:00:07Z",
+          "released_at": "2026-10-30T18:59:47Z",
           "changelog": "Initial release — 22 tools: movies, calendar, queue, history, commands, status, quality profiles, root folders, tags, blocklist, wanted/missing."
         }
       ]
@@ -49,13 +49,13 @@
       "license": "MIT",
       "versions": [
         {
-          "version": "2026.1029.259",
+          "version": "2026.1030.1859",
           "abi_min": 1,
           "abi_max": 1,
-          "url": "https://github.com/aleksclark/switchboard_plugins/releases/download/v20261029.025952/sonarr.wasm",
-          "sha256": "185de46495bc11f660fca3dddfbc1ee56a2b08d50686ea4e8c77dc615001045a",
-          "size": 161575,
-          "released_at": "2026-10-29T03:00:07Z",
+          "url": "https://github.com/aleksclark/switchboard_plugins/releases/download/v20261030.185932/sonarr.wasm",
+          "sha256": "3fc9ec2a5e35b04d8e567d6cbd05addac3f6f4bcbb649e02376b8dbbaff9612a",
+          "size": 161574,
+          "released_at": "2026-10-30T18:59:47Z",
           "changelog": "Initial release — 24 tools: series, episodes, calendar, queue, history, commands, status, quality profiles, root folders, tags, blocklist, wanted/missing."
         }
       ]
@@ -68,13 +68,13 @@
       "license": "MIT",
       "versions": [
         {
-          "version": "2026.1029.259",
+          "version": "2026.1030.1859",
           "abi_min": 1,
           "abi_max": 1,
-          "url": "https://github.com/aleksclark/switchboard_plugins/releases/download/v20261029.025952/lidarr.wasm",
-          "sha256": "e3488cb5925ecca937a84ceb717869b12cf1c390dd34a26b82b54fedf7f648b0",
+          "url": "https://github.com/aleksclark/switchboard_plugins/releases/download/v20261030.185932/lidarr.wasm",
+          "sha256": "96102a4537675e28a310f16c610d036a5b529f7a9a8c7c787f855107b846aa83",
           "size": 163313,
-          "released_at": "2026-10-29T03:00:07Z",
+          "released_at": "2026-10-30T18:59:47Z",
           "changelog": "Initial release — 27 tools: artists, albums, calendar, queue, history, commands, status, quality/metadata profiles, root folders, tags, blocklist, wanted/missing."
         }
       ]
@@ -87,13 +87,13 @@
       "license": "MIT",
       "versions": [
         {
-          "version": "2026.1029.259",
+          "version": "2026.1030.1859",
           "abi_min": 1,
           "abi_max": 1,
-          "url": "https://github.com/aleksclark/switchboard_plugins/releases/download/v20261029.025952/readarr.wasm",
+          "url": "https://github.com/aleksclark/switchboard_plugins/releases/download/v20261030.185932/readarr.wasm",
           "sha256": "f364868406146dfc0b0396e3fcac8884f8964a27c353be970ff3b96b5dd895d4",
           "size": 165489,
-          "released_at": "2026-10-29T03:00:07Z",
+          "released_at": "2026-10-30T18:59:47Z",
           "changelog": "Initial release — 29 tools: authors, books, calendar, queue, history, commands, status, quality/metadata profiles, root folders, tags, blocklist, wanted/missing."
         }
       ]
@@ -106,13 +106,13 @@
       "license": "MIT",
       "versions": [
         {
-          "version": "2026.1029.259",
+          "version": "2026.1030.1859",
           "abi_min": 1,
           "abi_max": 1,
-          "url": "https://github.com/aleksclark/switchboard_plugins/releases/download/v20261029.025952/prowlarr.wasm",
-          "sha256": "47341ff5c569f0ddc98a99ff714631b0f2da6afbe8e547c18730de8ae9338d3f",
+          "url": "https://github.com/aleksclark/switchboard_plugins/releases/download/v20261030.185932/prowlarr.wasm",
+          "sha256": "e37fcb37f4224a743929f6dcf9ce5afb38c22450901a7f0b1b08e818cf95ca1d",
           "size": 157524,
-          "released_at": "2026-10-29T03:00:07Z",
+          "released_at": "2026-10-30T18:59:47Z",
           "changelog": "Initial release — 25 tools: indexers, search, applications, indexer proxies, status, tags, download clients, notifications."
         }
       ]
@@ -125,13 +125,13 @@
       "license": "MIT",
       "versions": [
         {
-          "version": "2026.1029.259",
+          "version": "2026.1030.1859",
           "abi_min": 1,
           "abi_max": 1,
-          "url": "https://github.com/aleksclark/switchboard_plugins/releases/download/v20261029.025952/agents.wasm",
-          "sha256": "f8c5262781abad82e9c83a95ec6ef7a0cd3d8abecdd78f3cb8b72bddc096bebc",
+          "url": "https://github.com/aleksclark/switchboard_plugins/releases/download/v20261030.185932/agents.wasm",
+          "sha256": "d5d3f702bd203ae25e76da16a79f106e99602b90886853429b94f6c0f61386ed",
           "size": 244100,
-          "released_at": "2026-10-29T03:00:07Z",
+          "released_at": "2026-10-30T18:59:47Z",
           "changelog": "Initial release — 21 tools: project lifecycle, workspace management, agent spawn/stop/restart, A2A messaging, proxy discovery, skill-based routing."
         }
       ]
@@ -144,13 +144,13 @@
       "license": "MIT",
       "versions": [
         {
-          "version": "2026.1029.259",
+          "version": "2026.1030.1859",
           "abi_min": 1,
           "abi_max": 1,
-          "url": "https://github.com/aleksclark/switchboard_plugins/releases/download/v20261029.025952/primer.wasm",
-          "sha256": "96577ca23ad323c312b89bccc0fad9f89705372c1b59695e3311b2ee49765356",
-          "size": 225506,
-          "released_at": "2026-10-29T03:00:07Z",
+          "url": "https://github.com/aleksclark/switchboard_plugins/releases/download/v20261030.185932/primer.wasm",
+          "sha256": "32a64ec5884d98c462cc9600dbb3754dd4668797a7fe5df55b63d2ab74e7fcc1",
+          "size": 227106,
+          "released_at": "2026-10-30T18:59:47Z",
           "changelog": "Initial release — 39 tools for Primer TV catalog and scheduling, Primer Tasks assignments and verification, and content ingest reconciliation."
         }
       ]
