@@ -110,6 +110,12 @@ pub(crate) const ROUTES: &[Route] = &[
     route("primer_list_student_learning_assignments", "List a student's workstation assignments and their state.", "GET", "/students/{id}/assignments", NONE, Body::None, false),
     route("primer_create_learning_assignment", "Assign a workstation activity revision to an LMS student. It appears in the student's work queue on the workstation after the next sync.", "POST", "/assignments", NONE, Body::Json("JSON {\"studentId\",\"activityRevisionId\",\"priority\"?,\"reason\"?}"), false),
     route("primer_cancel_learning_assignment", "Cancel a workstation assignment. Work already done is kept.", "POST", "/assignments/{id}/cancel", NONE, Body::None, false),
+    route("primer_enroll_student_in_course", "Enroll an LMS student in a course (for example terminal-starters) so its lessons unlock in order. Creates or resumes the enrollment and returns its id. Follow with primer_assign_next_learning_activity to assign the first lesson; later lessons are assigned automatically as each one is completed.", "POST", "/students/{id}/enrollments", NONE, Body::Json("JSON {\"curriculumSlug\"|\"curriculumId\"|\"curriculumRevisionId\",\"priority\"?}"), false),
+    route("primer_assign_next_learning_activity", "Assign the student's next eligible workstation lesson from their enrolled courses (or the given slug). Returns the assignment, or a blockReason when nothing is eligible. Safe to repeat: an open assignment is returned instead of a duplicate.", "POST", "/students/{id}/assign-next", NONE, Body::Json("JSON {\"preferReinforcement\"?: false,\"slug\"?,\"reason\"?,\"priority\"?}"), false),
+    route("primer_get_enrollment_progress", "Show a course enrollment's progress: completed, current and locked lessons.", "GET", "/enrollments/{id}/progress", NONE, Body::None, false),
+    route("primer_get_enrollment_eligibility", "Show which lessons of a course enrollment are eligible now and why others are blocked.", "GET", "/enrollments/{id}/eligibility", NONE, Body::None, false),
+    route("primer_pause_enrollment", "Pause a course enrollment so no new lessons are assigned. Work already done is kept.", "POST", "/enrollments/{id}/pause", NONE, Body::Json("JSON {\"reason\"?}"), false),
+    route("primer_resume_enrollment", "Resume a paused course enrollment.", "POST", "/enrollments/{id}/resume", NONE, Body::Json("JSON {\"reason\"?}"), false),
     route("primer_create_workstation_pairing_code", "Create a one-time code that pairs the student workstation to an LMS student. The student types it into the primer app on the workstation. Treat the code as a secret and give it only to the parent.", "POST", "/pairing-codes", NONE, Body::Json("JSON {\"studentId\"}"), false),
     route("primer_get_student_learning_overview", "Summarize a student's workstation learning: paired devices, open assignments, recent sessions and mastery.", "GET", "/students/{id}/learning-overview", NONE, Body::None, false),
     route("primer_get_student_activity_log", "Newest-first log of a student's workstation sessions, submitted short answers and each automated review outcome with the feedback the student saw.", "GET", "/students/{id}/activity-log", &["limit"], Body::None, false),
@@ -280,6 +286,17 @@ mod tests {
         assert!(matches!(apply.body, Body::Json(text) if text.contains("bundleDigest")));
         let pair = find("primer_create_workstation_pairing_code").expect("pairing");
         assert_eq!((pair.method, pair.path), ("POST", "/pairing-codes"));
+        let enroll = find("primer_enroll_student_in_course").expect("enroll");
+        assert_eq!(
+            (enroll.method, enroll.path),
+            ("POST", "/students/{id}/enrollments")
+        );
+        assert!(matches!(enroll.body, Body::Json(text) if text.contains("curriculumSlug")));
+        let next = find("primer_assign_next_learning_activity").expect("assign next");
+        assert_eq!(
+            (next.method, next.path),
+            ("POST", "/students/{id}/assign-next")
+        );
         let log = find("primer_get_student_activity_log").expect("log");
         assert_eq!(path_params(log.path), vec!["id"]);
         assert_eq!(log.query, &["limit"]);
@@ -294,6 +311,10 @@ mod tests {
             "primer_get_student_learning_overview",
             "primer_get_response_review",
             "primer_decide_response_review",
+            "primer_get_enrollment_progress",
+            "primer_get_enrollment_eligibility",
+            "primer_pause_enrollment",
+            "primer_resume_enrollment",
         ] {
             assert!(find(name).is_some(), "{name}");
         }
@@ -325,7 +346,8 @@ mod tests {
                     "/curriculum/import/",
                     "/assignments",
                     "/pairing-codes",
-                    "/response-reviews"
+                    "/response-reviews",
+                    "/enrollments"
                 ]
                 .iter()
                 .any(|prefix| route.path.starts_with(prefix)),
