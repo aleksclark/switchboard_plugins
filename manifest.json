@@ -154,6 +154,25 @@
           "changelog": "Initial release — 39 tools for Primer TV catalog and scheduling, Primer Tasks assignments and verification, and content ingest reconciliation."
         }
       ]
+    },
+    {
+      "name": "platen",
+      "description": "Platen printer and scanner server — print documents, check ink and queues, scan pages, and file scans in Paperless-ngx via the Platen REST API",
+      "author": "aleksclark",
+      "homepage": "https://github.com/aleksclark/switchboard_plugins",
+      "license": "MIT",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "abi_min": 1,
+          "abi_max": 1,
+          "url": "",
+          "sha256": "",
+          "size": 0,
+          "released_at": "",
+          "changelog": "Initial release — 14 tools: devices, printer status and queue, printing with dry run and confirmation, print history and cancel, scans, and Paperless filing and search."
+        }
+      ]
     }
   ]
 }

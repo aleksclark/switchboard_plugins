@@ -51,6 +51,11 @@ jobs:
       - name: Test Primer setup and routing
         run: cargo test -p primer-wasm
 
+      - name: Test Platen request mapping
+        run: |
+          cargo test -p platen-wasm
+          cargo fmt -p platen-wasm --check
+
       - name: Build all plugins
         run: cargo build --target wasm32-wasip1 --release
         env:
@@ -66,7 +71,7 @@ jobs:
 
       - name: Verify WASM outputs exist
         run: |
-          for plugin in homeassistant radarr sonarr lidarr readarr prowlarr agents primer; do
+          for plugin in homeassistant radarr sonarr lidarr readarr prowlarr agents primer platen; do
             file="target/wasm32-wasip1/release/${plugin}_wasm.wasm"
             if [ ! -f "$file" ]; then
               echo "MISSING: $file"

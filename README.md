@@ -13,6 +13,7 @@ Community WASM plugins for [Switchboard](https://github.com/daltoniam/switchboar
 | [readarr](plugins/readarr/) | 29 | Readarr book manager — authors, books, calendar, queue, history, quality/metadata profiles |
 | [prowlarr](plugins/prowlarr/) | 25 | Prowlarr indexer manager — indexers, search, applications, download clients |
 | [primer](plugins/primer/) | 103 | Primer TV catalog, Tasks assignments, reading library and plans, and content ingest |
+| [platen](plugins/platen/) | 14 | Platen printers and scanner — print with dry run and paper confirmation, ink and queues, scans, Paperless filing |
 
 ## Installing
 
